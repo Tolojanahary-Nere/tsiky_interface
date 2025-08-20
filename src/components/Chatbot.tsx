@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { SendIcon, SmileIcon, ImageIcon, MicIcon, InfoIcon } from 'lucide-react';
 
-const DJANGO_API_URL = 'http://localhost:8000/chat/';
+const DJANGO_API_URL = 'https://tsiky-backend.onrender.com/chat/';
 
 async function sendMessageToDjango(message: string) {
   try {
