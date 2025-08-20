@@ -4,6 +4,7 @@ import { SendIcon, SmileIcon, ImageIcon, MicIcon, InfoIcon } from 'lucide-react'
 
 const DJANGO_API_URL = 'https://tsiky-backend.onrender.com/chat/';
 
+// Fonction pour envoyer un message au backend Django
 async function sendMessageToDjango(message: string) {
   try {
     const response = await fetch(DJANGO_API_URL, {
@@ -17,11 +18,10 @@ async function sendMessageToDjango(message: string) {
     }
 
     const data = await response.json();
-    console.log("Backend response:", data); // Log pour déboguer la réponse brute
     const botReply = typeof data.reply === "string" 
-      ? data.reply.replace(/undefined/g, "").trim() 
+      ? data.reply.trim() 
       : "Désolé, je n'ai pas de réponse pour le moment.";
-    console.log("Processed botReply:", botReply); // Log pour vérifier la réponse nettoyée
+
     return [botReply];
   } catch (err) {
     console.error("Error in sendMessageToDjango:", err);
@@ -29,27 +29,20 @@ async function sendMessageToDjango(message: string) {
   }
 }
 
-// 🔹 Effet machine à taper
-const Typewriter: React.FC<{ text: string; speed?: number }> = ({ text = "", speed = 30 }) => {
+// Composant Typewriter pour effet machine à taper
+const Typewriter: React.FC<{ text?: string; speed?: number }> = ({ text = "", speed = 30 }) => {
   const [displayedText, setDisplayedText] = useState("");
 
   useEffect(() => {
     setDisplayedText("");
-    console.log("Typewriter input text:", text); // Log pour déboguer le texte entrant
-    const cleanText = String(text).replace(/undefined/g, "").trim(); // Sanitize text
-    if (!cleanText) {
-      console.log("Typewriter: cleanText is empty, exiting");
-      return;
-    }
+    const cleanText = String(text || "").trim();
+    if (!cleanText) return;
 
     let i = 0;
     const interval = setInterval(() => {
-      if (!cleanText[i]) {
-        clearInterval(interval);
-        return;
-      }
-      setDisplayedText((prev) => prev + cleanText[i]);
+      setDisplayedText(prev => prev + cleanText[i]);
       i++;
+      if (i >= cleanText.length) clearInterval(interval);
     }, speed);
 
     return () => clearInterval(interval);
@@ -58,13 +51,16 @@ const Typewriter: React.FC<{ text: string; speed?: number }> = ({ text = "", spe
   return <span>{displayedText}</span>;
 };
 
+// Composant principal Chatbot
 export const Chatbot: React.FC = () => {
-  const [messages, setMessages] = useState([{
-    id: 1,
-    sender: 'bot',
-    text: "Bonjour, je suis là pour t'écouter et t'aider. Comment te sens-tu aujourd'hui ?",
-    timestamp: new Date(),
-  }]);
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      sender: 'bot',
+      text: "Bonjour, je suis là pour t'écouter et t'aider. Comment te sens-tu aujourd'hui ?",
+      timestamp: new Date(),
+    }
+  ]);
   const [inputText, setInputText] = useState('');
   const [isBotTyping, setIsBotTyping] = useState(false);
 
@@ -84,18 +80,19 @@ export const Chatbot: React.FC = () => {
 
     const responses = await sendMessageToDjango(userMessage.text);
 
-    responses.forEach(text => {
-      console.log("Adding bot message:", text); // Log pour vérifier le texte ajouté
-      setMessages(prev => [
-        ...prev,
-        {
-          id: prev.length + 1,
-          sender: 'bot',
-          text,
-          timestamp: new Date(),
-        },
-      ]);
-    });
+    responses
+      .filter(text => text !== undefined && text !== null)
+      .forEach(text => {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: prev.length + 1,
+            sender: 'bot',
+            text: String(text),
+            timestamp: new Date(),
+          },
+        ]);
+      });
 
     setIsBotTyping(false);
   };
@@ -103,6 +100,7 @@ export const Chatbot: React.FC = () => {
   return (
     <section className="max-w-2xl mx-auto">
       <div className="bg-slate-800 rounded-lg shadow-lg overflow-hidden border border-slate-700">
+        {/* Header */}
         <div className="bg-slate-700 p-4 flex items-center">
           <div className="w-3 h-3 bg-lavender-400 rounded-full mr-2 animate-pulse"></div>
           <h2 className="text-lavender-100 font-medium">Assistant Bienveillant</h2>
@@ -113,6 +111,7 @@ export const Chatbot: React.FC = () => {
           </div>
         </div>
 
+        {/* Messages */}
         <div className="h-96 overflow-y-auto p-4 bg-slate-900/50">
           {messages.map(message => (
             <motion.div
@@ -145,6 +144,7 @@ export const Chatbot: React.FC = () => {
           )}
         </div>
 
+        {/* Input */}
         <div className="p-4 bg-slate-800 border-t border-slate-700">
           <div className="flex items-center">
             <button type="button" aria-label="Emoji" className="p-2 text-slate-400 hover:text-lavender-300 rounded-full"><SmileIcon size={20} /></button>
