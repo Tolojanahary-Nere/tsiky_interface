@@ -5,18 +5,22 @@ import { SendIcon, SmileIcon, ImageIcon, MicIcon, InfoIcon } from 'lucide-react'
 
 const DJANGO_API_URL = 'https://tsiky-backend.onrender.com/chat/';
 
-
 async function sendMessageToDjango(message: string) {
   try {
     const response = await fetch(DJANGO_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message })
-  });
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+    });
+
+    if (!response.ok) {
+      return ["Erreur serveur : " + response.status];
+    }
 
     const data = await response.json();
     return [data.reply || "Désolé, je n'ai pas de réponse pour le moment."];
   } catch (err) {
+    console.error(err);
     return ["Désolé, je n'arrive pas à contacter le serveur."];
   }
 }
@@ -26,21 +30,13 @@ const Typewriter: React.FC<{ text: string; speed?: number }> = ({ text, speed = 
   const [displayedText, setDisplayedText] = useState("");
 
   useEffect(() => {
-    setDisplayedText(""); // reset quand nouveau texte
+    setDisplayedText("");
     let i = 0;
     const interval = setInterval(() => {
+      if (!text[i]) return clearInterval(interval);
+
       setDisplayedText((prev) => prev + text[i]);
-      let delay = speed;
-
-      // Pause intelligente : plus longue après . et ,
-      if (text[i] === "." || text[i] === "?" || text[i] === "!") {
-        delay = speed * 15; // petite pause après une phrase
-      } else if (text[i] === ",") {
-        delay = speed * 8; // pause plus courte après une virgule
-      }
-
       i++;
-      if (i >= text.length) clearInterval(interval);
     }, speed);
 
     return () => clearInterval(interval);
@@ -54,7 +50,7 @@ export const Chatbot: React.FC = () => {
     id: 1,
     sender: 'bot',
     text: "Bonjour, je suis là pour t'écouter et t'aider. Comment te sens-tu aujourd'hui ?",
-    timestamp: new Date()
+    timestamp: new Date(),
   }]);
   const [inputText, setInputText] = useState('');
   const [isBotTyping, setIsBotTyping] = useState(false);
@@ -67,8 +63,9 @@ export const Chatbot: React.FC = () => {
       id: messages.length + 1,
       sender: 'user',
       text: inputText,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
+
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
     setIsBotTyping(true);
@@ -82,15 +79,18 @@ export const Chatbot: React.FC = () => {
           id: prev.length + 1,
           sender: 'bot',
           text,
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       ]);
     });
 
     setIsBotTyping(false);
   };
 
-
+  // Scroll automatique vers le bas
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isBotTyping]);
 
   return (
     <section className="max-w-2xl mx-auto">
@@ -108,6 +108,7 @@ export const Chatbot: React.FC = () => {
             </button>
           </div>
         </div>
+
         <div className="h-96 overflow-y-auto p-4 bg-slate-900/50">
           {messages.map(message => (
             <motion.div
@@ -140,22 +141,11 @@ export const Chatbot: React.FC = () => {
           )}
           <div ref={messagesEndRef} />
         </div>
+
         <div className="p-4 bg-slate-800 border-t border-slate-700">
           <div className="flex items-center">
-            <button
-              type="button"
-              aria-label="Ajouter un emoji"
-              className="p-2 text-slate-400 hover:text-lavender-300 rounded-full"
-            >
-              <SmileIcon size={20} />
-            </button>
-            <button
-              type="button"
-              aria-label="Joindre une image"
-              className="p-2 text-slate-400 hover:text-lavender-300 rounded-full"
-            >
-              <ImageIcon size={20} />
-            </button>
+            <button type="button" aria-label="Ajouter un emoji" className="p-2 text-slate-400 hover:text-lavender-300 rounded-full"><SmileIcon size={20} /></button>
+            <button type="button" aria-label="Joindre une image" className="p-2 text-slate-400 hover:text-lavender-300 rounded-full"><ImageIcon size={20} /></button>
             <input
               type="text"
               value={inputText}
@@ -164,21 +154,8 @@ export const Chatbot: React.FC = () => {
               placeholder="Écris ton message ici..."
               className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 mx-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-lavender-400"
             />
-            <button
-              type="button"
-              aria-label="Enregistrer un message vocal"
-              className="p-2 text-slate-400 hover:text-lavender-300 rounded-full"
-            >
-              <MicIcon size={20} />
-            </button>
-            <button
-              type="button"
-              aria-label="Envoyer le message"
-              onClick={handleSendMessage}
-              className="p-2 bg-lavender-500 hover:bg-lavender-400 text-white rounded-full"
-            >
-              <SendIcon size={20} />
-            </button>
+            <button type="button" aria-label="Enregistrer un message vocal" className="p-2 text-slate-400 hover:text-lavender-300 rounded-full"><MicIcon size={20} /></button>
+            <button type="button" aria-label="Envoyer le message" onClick={handleSendMessage} className="p-2 bg-lavender-500 hover:bg-lavender-400 text-white rounded-full"><SendIcon size={20} /></button>
           </div>
           <div className="mt-2 text-xs text-center text-slate-500">
             Cet assistant est là pour t'écouter, mais ne remplace pas un professionnel de santé.
