@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { SendIcon, SmileIcon, ImageIcon, MicIcon, InfoIcon } from 'lucide-react';
 
 const DJANGO_API_URL = 'https://tsiky-backend.onrender.com/chat/';
 
-// Fonction pour envoyer un message au backend Django
+// Envoyer un message au backend Django
 async function sendMessageToDjango(message: string) {
   try {
     const response = await fetch(DJANGO_API_URL, {
@@ -13,13 +13,12 @@ async function sendMessageToDjango(message: string) {
       body: JSON.stringify({ message }),
     });
 
-    if (!response.ok) return ["Erreur serveur : " + response.status];
+    if (!response.ok) {
+      return ["Erreur serveur : " + response.status];
+    }
 
     const data = await response.json();
-    const botReply = typeof data.reply === "string"
-      ? data.replace(/undefined/g, "").trim()
-      : "Désolé, je n'ai pas de réponse pour le moment.";
-
+    const botReply = typeof data.reply === "string" ? data.reply.trim() : "Désolé, je n'ai pas de réponse pour le moment.";
     return [botReply];
   } catch (err) {
     console.error("Error in sendMessageToDjango:", err);
@@ -27,6 +26,35 @@ async function sendMessageToDjango(message: string) {
   }
 }
 
+// Effet machine à taper
+const Typewriter: React.FC<{ text?: string; speed?: number; onComplete?: () => void }> = ({ text = "", speed = 30, onComplete }) => {
+  const [displayedText, setDisplayedText] = useState("");
+
+  useEffect(() => {
+    setDisplayedText("");
+    const cleanText = (text ?? "").toString().trim();
+    if (!cleanText) {
+      onComplete?.();
+      return;
+    }
+
+    let i = 0;
+    const interval = setInterval(() => {
+      setDisplayedText(prev => prev + cleanText[i]);
+      i++;
+      if (i >= cleanText.length) {
+        clearInterval(interval);
+        onComplete?.();
+      }
+    }, speed);
+
+    return () => clearInterval(interval);
+  }, [text, speed, onComplete]);
+
+  return <span>{displayedText}</span>;
+};
+
+// Composant principal Chatbot
 export const Chatbot: React.FC = () => {
   const [messages, setMessages] = useState([
     {
@@ -38,6 +66,12 @@ export const Chatbot: React.FC = () => {
   ]);
   const [inputText, setInputText] = useState('');
   const [isBotTyping, setIsBotTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Scroll automatique vers le bas
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isBotTyping]);
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
@@ -68,8 +102,6 @@ export const Chatbot: React.FC = () => {
           },
         ]);
       });
-
-    setIsBotTyping(false);
   };
 
   return (
@@ -96,7 +128,13 @@ export const Chatbot: React.FC = () => {
               className={`mb-4 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div className={`max-w-xs sm:max-w-sm px-4 py-2 rounded-lg ${message.sender === 'user' ? 'bg-lavender-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-200 rounded-bl-none'}`}>
-                <p>{message.text}</p> {/* Remplacement de Typewriter par message.text */}
+                <p>
+                  {message.sender === "bot" ? (
+                    <Typewriter text={message.text} speed={25} onComplete={() => setIsBotTyping(false)} />
+                  ) : (
+                    message.text
+                  )}
+                </p>
                 <div className="text-right mt-1">
                   <span className="text-xs opacity-70">
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -113,6 +151,7 @@ export const Chatbot: React.FC = () => {
               </div>
             </motion.div>
           )}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Input */}
