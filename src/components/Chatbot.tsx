@@ -87,10 +87,7 @@ export const Chatbot: React.FC = () => {
     setIsBotTyping(false);
   };
 
-  // Scroll automatique vers le bas
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isBotTyping]);
+ 
 
   return (
     <section className="max-w-2xl mx-auto">
