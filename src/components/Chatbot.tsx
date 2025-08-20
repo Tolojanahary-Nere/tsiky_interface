@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { SendIcon, SmileIcon, ImageIcon, MicIcon, InfoIcon } from 'lucide-react';
 
 const DJANGO_API_URL = 'https://tsiky-backend.onrender.com/chat/';
 
-// Envoyer un message au backend Django
+// Fonction pour envoyer un message au backend Django
 async function sendMessageToDjango(message: string) {
   try {
     const response = await fetch(DJANGO_API_URL, {
@@ -13,12 +13,13 @@ async function sendMessageToDjango(message: string) {
       body: JSON.stringify({ message }),
     });
 
-    if (!response.ok) {
-      return ["Erreur serveur : " + response.status];
-    }
+    if (!response.ok) return ["Erreur serveur : " + response.status];
 
     const data = await response.json();
-    const botReply = typeof data.reply === "string" ? data.reply.trim() : "Désolé, je n'ai pas de réponse pour le moment.";
+    const botReply = typeof data.reply === "string"
+      ? data.reply.replace(/undefined/g, "").trim()  // <-- Nettoyage du 'undefined'
+      : "Désolé, je n'ai pas de réponse pour le moment.";
+
     return [botReply];
   } catch (err) {
     console.error("Error in sendMessageToDjango:", err);
@@ -26,30 +27,24 @@ async function sendMessageToDjango(message: string) {
   }
 }
 
-// Effet machine à taper
-const Typewriter: React.FC<{ text?: string; speed?: number; onComplete?: () => void }> = ({ text = "", speed = 30, onComplete }) => {
+// Composant Typewriter pour effet machine à taper
+const Typewriter: React.FC<{ text?: string; speed?: number }> = ({ text = "", speed = 30 }) => {
   const [displayedText, setDisplayedText] = useState("");
 
   useEffect(() => {
     setDisplayedText("");
-    const cleanText = (text ?? "").toString().trim();
-    if (!cleanText) {
-      onComplete?.();
-      return;
-    }
+    const cleanText = String(text || "").replace(/undefined/g, "").trim();
+    if (!cleanText) return;
 
     let i = 0;
     const interval = setInterval(() => {
       setDisplayedText(prev => prev + cleanText[i]);
       i++;
-      if (i >= cleanText.length) {
-        clearInterval(interval);
-        onComplete?.();
-      }
+      if (i >= cleanText.length) clearInterval(interval);
     }, speed);
 
     return () => clearInterval(interval);
-  }, [text, speed, onComplete]);
+  }, [text, speed]);
 
   return <span>{displayedText}</span>;
 };
@@ -66,12 +61,6 @@ export const Chatbot: React.FC = () => {
   ]);
   const [inputText, setInputText] = useState('');
   const [isBotTyping, setIsBotTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Scroll automatique vers le bas
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isBotTyping]);
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
@@ -102,6 +91,8 @@ export const Chatbot: React.FC = () => {
           },
         ]);
       });
+
+    setIsBotTyping(false);
   };
 
   return (
@@ -129,11 +120,9 @@ export const Chatbot: React.FC = () => {
             >
               <div className={`max-w-xs sm:max-w-sm px-4 py-2 rounded-lg ${message.sender === 'user' ? 'bg-lavender-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-200 rounded-bl-none'}`}>
                 <p>
-                  {message.sender === "bot" ? (
-                    <Typewriter text={message.text} speed={25} onComplete={() => setIsBotTyping(false)} />
-                  ) : (
-                    message.text
-                  )}
+                  {message.sender === "bot"
+                    ? <Typewriter text={message.text} speed={25} />
+                    : message.text}
                 </p>
                 <div className="text-right mt-1">
                   <span className="text-xs opacity-70">
@@ -151,7 +140,6 @@ export const Chatbot: React.FC = () => {
               </div>
             </motion.div>
           )}
-          <div ref={messagesEndRef} />
         </div>
 
         {/* Input */}
