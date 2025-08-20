@@ -5,6 +5,7 @@ import { SendIcon, SmileIcon, ImageIcon, MicIcon, InfoIcon } from 'lucide-react'
 
 const DJANGO_API_URL = 'https://tsiky-backend.onrender.com/chat/';
 
+
 async function sendMessageToDjango(message: string) {
   try {
     const response = await fetch(DJANGO_API_URL, {
