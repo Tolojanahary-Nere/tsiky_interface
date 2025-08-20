@@ -17,7 +17,7 @@ async function sendMessageToDjango(message: string) {
 
     const data = await response.json();
     const botReply = typeof data.reply === "string"
-      ? data.reply.replace(/undefined/g, "").trim()  // <-- Nettoyage du 'undefined'
+      ? data.replace(/undefined/g, "").trim()
       : "Désolé, je n'ai pas de réponse pour le moment.";
 
     return [botReply];
@@ -27,29 +27,6 @@ async function sendMessageToDjango(message: string) {
   }
 }
 
-// Composant Typewriter pour effet machine à taper
-const Typewriter: React.FC<{ text?: string; speed?: number }> = ({ text = "", speed = 30 }) => {
-  const [displayedText, setDisplayedText] = useState("");
-
-  useEffect(() => {
-    setDisplayedText("");
-    const cleanText = String(text || "").replace(/undefined/g, "").trim();
-    if (!cleanText) return;
-
-    let i = 0;
-    const interval = setInterval(() => {
-      setDisplayedText(prev => prev + cleanText[i]);
-      i++;
-      if (i >= cleanText.length) clearInterval(interval);
-    }, speed);
-
-    return () => clearInterval(interval);
-  }, [text, speed]);
-
-  return <span>{displayedText}</span>;
-};
-
-// Composant principal Chatbot
 export const Chatbot: React.FC = () => {
   const [messages, setMessages] = useState([
     {
@@ -119,11 +96,7 @@ export const Chatbot: React.FC = () => {
               className={`mb-4 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div className={`max-w-xs sm:max-w-sm px-4 py-2 rounded-lg ${message.sender === 'user' ? 'bg-lavender-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-200 rounded-bl-none'}`}>
-                <p>
-                  {message.sender === "bot"
-                    ? <Typewriter text={message.text} speed={25} />
-                    : message.text}
-                </p>
+                <p>{message.text}</p> {/* Remplacement de Typewriter par message.text */}
                 <div className="text-right mt-1">
                   <span className="text-xs opacity-70">
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
