@@ -1,0 +1,137 @@
+/* PLEASE NOTE: THESE TAILWIND IMPORTS SHOULD NEVER BE DELETED */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+/* DO NOT DELETE THESE TAILWIND IMPORTS, OTHERWISE THE STYLING WILL NOT RENDER AT ALL */
+/* Importation des polices */
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* Styles globaux */
+body {
+  font-family: 'Inter', sans-serif;
+  color: #5A5A5A;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+.dark body {
+  color: #E0E0E0;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Comic Neue', cursive;
+  font-weight: 700;
+}
+/* Styles pour les séparateurs ondulés */
+.wave-divider {
+  position: relative;
+  height: 20px;
+  overflow: hidden;
+}
+.wave-divider::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z' fill='%23FFD3B6' fill-opacity='0.4'%3E%3C/path%3E%3C/svg%3E") center bottom;
+  background-size: 100% 100%;
+  transition: background 0.3s ease;
+}
+.dark .wave-divider::before {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z' fill='%236E5A4D' fill-opacity='0.4'%3E%3C/path%3E%3C/svg%3E") center bottom;
+}
+/* Styles pour les boutons avec effet gonflable */
+.btn-comfort {
+  @apply bg-comfort-500 text-white px-6 py-3 rounded-3xl font-medium transition-all duration-300;
+  transform-origin: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.btn-comfort:hover {
+  @apply bg-comfort-400;
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+.dark .btn-comfort {
+  @apply bg-dark-comfort-500 text-white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+.dark .btn-comfort:hover {
+  @apply bg-dark-comfort-400;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+.btn-calm {
+  @apply bg-calm-500 text-white px-6 py-3 rounded-3xl font-medium transition-all duration-300;
+  transform-origin: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.btn-calm:hover {
+  @apply bg-calm-400;
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+.dark .btn-calm {
+  @apply bg-dark-calm-500 text-white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+.dark .btn-calm:hover {
+  @apply bg-dark-calm-400;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+.btn-outline {
+  @apply border-2 border-comfort-200 text-comfort-600 px-6 py-3 rounded-3xl font-medium transition-all duration-300;
+  transform-origin: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+.btn-outline:hover {
+  @apply bg-comfort-50 border-comfort-300;
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+.dark .btn-outline {
+  @apply border-dark-comfort-600 text-dark-comfort-200;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+.dark .btn-outline:hover {
+  @apply bg-dark-comfort-100/20 border-dark-comfort-500;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+}
+/* Styles pour les cartes avec effet claymorphe */
+.clay-card {
+  @apply bg-white rounded-3xl p-6;
+  box-shadow: 
+    10px 10px 20px rgba(0, 0, 0, 0.05),
+    -10px -10px 20px rgba(255, 255, 255, 0.8),
+    inset 0 0 0 rgba(255, 255, 255, 0.4);
+  transition: all 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+}
+.clay-card:hover {
+  box-shadow: 
+    8px 8px 15px rgba(0, 0, 0, 0.05),
+    -8px -8px 15px rgba(255, 255, 255, 0.8),
+    inset 2px 2px 5px rgba(0, 0, 0, 0.05),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.4);
+}
+.dark .clay-card {
+  @apply bg-dark-calm-100 rounded-3xl p-6;
+  box-shadow: 
+    8px 8px 16px rgba(0, 0, 0, 0.25),
+    -8px -8px 16px rgba(30, 41, 59, 0.2),
+    inset 0 0 0 rgba(30, 41, 59, 0.1);
+}
+.dark .clay-card:hover {
+  box-shadow: 
+    6px 6px 12px rgba(0, 0, 0, 0.3),
+    -6px -6px 12px rgba(30, 41, 59, 0.2),
+    inset 1px 1px 3px rgba(0, 0, 0, 0.2),
+    inset -1px -1px 3px rgba(30, 41, 59, 0.1);
+}
+/* Transition pour le changement de thème */
+.theme-transition {
+  transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+}
+/* Animation pour le changement de thème */
+@keyframes theme-fade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.theme-fade {
+  animation: theme-fade 0.5s ease-out;
+}
