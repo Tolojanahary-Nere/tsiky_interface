@@ -26,15 +26,21 @@ async function sendMessageToDjango(message: string) {
 }
 
 // 🔹 Effet machine à taper
-const Typewriter: React.FC<{ text: string; speed?: number }> = ({ text, speed = 30 }) => {
+const Typewriter: React.FC<{ text: string; speed?: number }> = ({ text = "", speed = 30 }) => {
   const [displayedText, setDisplayedText] = useState("");
 
   useEffect(() => {
     setDisplayedText("");
+    const cleanText = String(text).replace(/undefined/g, "").trim(); // Sanitize text to remove 'undefined'
+    if (!cleanText) return; // Exit early if text is empty
+
     let i = 0;
     const interval = setInterval(() => {
-      if (!text[i]) return clearInterval(interval);
-      setDisplayedText((prev) => prev + text[i]);
+      if (!cleanText[i]) {
+        clearInterval(interval);
+        return;
+      }
+      setDisplayedText((prev) => prev + cleanText[i]);
       i++;
     }, speed);
 
@@ -152,4 +158,4 @@ export const Chatbot: React.FC = () => {
       </div>
     </section>
   );
-};
+};                                                                                                                                                                                                                                                                                                                                                              
