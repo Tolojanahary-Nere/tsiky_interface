@@ -17,10 +17,14 @@ async function sendMessageToDjango(message: string) {
     }
 
     const data = await response.json();
-    const botReply = typeof data.reply === "string" ? data.reply : "Désolé, je n'ai pas de réponse pour le moment.";
+    console.log("Backend response:", data); // Log pour déboguer la réponse brute
+    const botReply = typeof data.reply === "string" 
+      ? data.reply.replace(/undefined/g, "").trim() 
+      : "Désolé, je n'ai pas de réponse pour le moment.";
+    console.log("Processed botReply:", botReply); // Log pour vérifier la réponse nettoyée
     return [botReply];
   } catch (err) {
-    console.error(err);
+    console.error("Error in sendMessageToDjango:", err);
     return ["Désolé, je n'arrive pas à contacter le serveur."];
   }
 }
@@ -31,8 +35,12 @@ const Typewriter: React.FC<{ text: string; speed?: number }> = ({ text = "", spe
 
   useEffect(() => {
     setDisplayedText("");
-    const cleanText = String(text).replace(/undefined/g, "").trim(); // Sanitize text to remove 'undefined'
-    if (!cleanText) return; // Exit early if text is empty
+    console.log("Typewriter input text:", text); // Log pour déboguer le texte entrant
+    const cleanText = String(text).replace(/undefined/g, "").trim(); // Sanitize text
+    if (!cleanText) {
+      console.log("Typewriter: cleanText is empty, exiting");
+      return;
+    }
 
     let i = 0;
     const interval = setInterval(() => {
@@ -77,6 +85,7 @@ export const Chatbot: React.FC = () => {
     const responses = await sendMessageToDjango(userMessage.text);
 
     responses.forEach(text => {
+      console.log("Adding bot message:", text); // Log pour vérifier le texte ajouté
       setMessages(prev => [
         ...prev,
         {
@@ -158,4 +167,4 @@ export const Chatbot: React.FC = () => {
       </div>
     </section>
   );
-};                                                                                                                                                                                                                                                                                                                                                              
+};
