@@ -1,5 +1,4 @@
-// Chatbot.tsx
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { SendIcon, SmileIcon, ImageIcon, MicIcon, InfoIcon } from 'lucide-react';
 
@@ -18,14 +17,15 @@ async function sendMessageToDjango(message: string) {
     }
 
     const data = await response.json();
-    return [data.reply || "Désolé, je n'ai pas de réponse pour le moment."];
+    const botReply = typeof data.reply === "string" ? data.reply : "Désolé, je n'ai pas de réponse pour le moment.";
+    return [botReply];
   } catch (err) {
     console.error(err);
     return ["Désolé, je n'arrive pas à contacter le serveur."];
   }
 }
 
-// 🔹 Composant Typewriter pour affichage progressif
+// 🔹 Effet machine à taper
 const Typewriter: React.FC<{ text: string; speed?: number }> = ({ text, speed = 30 }) => {
   const [displayedText, setDisplayedText] = useState("");
 
@@ -34,7 +34,6 @@ const Typewriter: React.FC<{ text: string; speed?: number }> = ({ text, speed = 
     let i = 0;
     const interval = setInterval(() => {
       if (!text[i]) return clearInterval(interval);
-
       setDisplayedText((prev) => prev + text[i]);
       i++;
     }, speed);
@@ -54,7 +53,6 @@ export const Chatbot: React.FC = () => {
   }]);
   const [inputText, setInputText] = useState('');
   const [isBotTyping, setIsBotTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
@@ -87,8 +85,6 @@ export const Chatbot: React.FC = () => {
     setIsBotTyping(false);
   };
 
- 
-
   return (
     <section className="max-w-2xl mx-auto">
       <div className="bg-slate-800 rounded-lg shadow-lg overflow-hidden border border-slate-700">
@@ -96,11 +92,7 @@ export const Chatbot: React.FC = () => {
           <div className="w-3 h-3 bg-lavender-400 rounded-full mr-2 animate-pulse"></div>
           <h2 className="text-lavender-100 font-medium">Assistant Bienveillant</h2>
           <div className="ml-auto flex items-center">
-            <button
-              type="button"
-              aria-label="Informations sur l'assistant"
-              className="p-2 text-slate-300 hover:text-lavender-300 rounded-full"
-            >
+            <button type="button" aria-label="Infos" className="p-2 text-slate-300 hover:text-lavender-300 rounded-full">
               <InfoIcon size={18} />
             </button>
           </div>
@@ -136,13 +128,12 @@ export const Chatbot: React.FC = () => {
               </div>
             </motion.div>
           )}
-          <div ref={messagesEndRef} />
         </div>
 
         <div className="p-4 bg-slate-800 border-t border-slate-700">
           <div className="flex items-center">
-            <button type="button" aria-label="Ajouter un emoji" className="p-2 text-slate-400 hover:text-lavender-300 rounded-full"><SmileIcon size={20} /></button>
-            <button type="button" aria-label="Joindre une image" className="p-2 text-slate-400 hover:text-lavender-300 rounded-full"><ImageIcon size={20} /></button>
+            <button type="button" aria-label="Emoji" className="p-2 text-slate-400 hover:text-lavender-300 rounded-full"><SmileIcon size={20} /></button>
+            <button type="button" aria-label="Image" className="p-2 text-slate-400 hover:text-lavender-300 rounded-full"><ImageIcon size={20} /></button>
             <input
               type="text"
               value={inputText}
@@ -151,8 +142,8 @@ export const Chatbot: React.FC = () => {
               placeholder="Écris ton message ici..."
               className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 mx-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-lavender-400"
             />
-            <button type="button" aria-label="Enregistrer un message vocal" className="p-2 text-slate-400 hover:text-lavender-300 rounded-full"><MicIcon size={20} /></button>
-            <button type="button" aria-label="Envoyer le message" onClick={handleSendMessage} className="p-2 bg-lavender-500 hover:bg-lavender-400 text-white rounded-full"><SendIcon size={20} /></button>
+            <button type="button" aria-label="Vocal" className="p-2 text-slate-400 hover:text-lavender-300 rounded-full"><MicIcon size={20} /></button>
+            <button type="button" aria-label="Envoyer" onClick={handleSendMessage} className="p-2 bg-lavender-500 hover:bg-lavender-400 text-white rounded-full"><SendIcon size={20} /></button>
           </div>
           <div className="mt-2 text-xs text-center text-slate-500">
             Cet assistant est là pour t'écouter, mais ne remplace pas un professionnel de santé.
