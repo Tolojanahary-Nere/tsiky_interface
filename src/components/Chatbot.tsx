@@ -13,13 +13,11 @@ async function sendMessageToDjango(message: string) {
       body: JSON.stringify({ message }),
     });
 
-    if (!response.ok) {
-      return ["Erreur serveur : " + response.status];
-    }
+    if (!response.ok) return ["Erreur serveur : " + response.status];
 
     const data = await response.json();
-    const botReply = typeof data.reply === "string" 
-      ? data.reply.trim() 
+    const botReply = typeof data.reply === "string"
+      ? data.reply.replace(/undefined/g, "").trim()  // <-- Nettoyage du 'undefined'
       : "Désolé, je n'ai pas de réponse pour le moment.";
 
     return [botReply];
@@ -35,7 +33,7 @@ const Typewriter: React.FC<{ text?: string; speed?: number }> = ({ text = "", sp
 
   useEffect(() => {
     setDisplayedText("");
-    const cleanText = String(text || "").trim();
+    const cleanText = String(text || "").replace(/undefined/g, "").trim();
     if (!cleanText) return;
 
     let i = 0;
