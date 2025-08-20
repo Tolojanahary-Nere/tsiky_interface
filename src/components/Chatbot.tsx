@@ -9,10 +9,11 @@ const DJANGO_API_URL = 'https://tsiky-backend.onrender.com/chat/';
 async function sendMessageToDjango(message: string) {
   try {
     const response = await fetch(DJANGO_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `message=${encodeURIComponent(message)}`,
-    });
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message })
+  });
+
     const data = await response.json();
     return [data.reply || "Désolé, je n'ai pas de réponse pour le moment."];
   } catch (err) {
