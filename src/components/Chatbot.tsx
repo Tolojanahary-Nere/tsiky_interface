@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { SendIcon, SmileIcon, ImageIcon, MicIcon, InfoIcon } from 'lucide-react';
 
-const DJANGO_API_URL = 'https://tsiky-backend.onrender.com';  // Backend local pour tests
+const DJANGO_API_URL = 'https://tsiky-backend.onrender.com/chat/';  // Backend de production
 
 // Fonction pour envoyer un message au backend Django
 async function sendMessageToDjango(message: string, signal?: AbortSignal) {
