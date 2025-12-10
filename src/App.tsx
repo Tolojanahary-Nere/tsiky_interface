@@ -8,16 +8,25 @@ import { Resources } from './components/Resources';
 import { EmergencyMode } from './components/EmergencyMode';
 import { Community } from './components/Community';
 import { StarAnimation } from './components/animations/StarAnimation';
+import './i18n/config';  // Import i18n configuration
 // Contexte pour le thème
 export const ThemeContext = createContext({
   isDarkMode: false,
-  toggleDarkMode: () => {}
+  toggleDarkMode: () => { }
 });
 export function App() {
-  const [currentSection, setCurrentSection] = useState('home');
+  // Charger la section sauvegardée ou 'home' par défaut
+  const [currentSection, setCurrentSection] = useState(() => {
+    return localStorage.getItem('tsiky_current_section') || 'home';
+  });
   const [showEmergencyMode, setShowEmergencyMode] = useState(false);
   const [showWelcomeGlow, setShowWelcomeGlow] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Sauvegarder la section actuelle
+  useEffect(() => {
+    localStorage.setItem('tsiky_current_section', currentSection);
+  }, [currentSection]);
   // Vérifier si le mode sombre est préféré ou sauvegardé
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -59,18 +68,18 @@ export function App() {
     isDarkMode,
     toggleDarkMode
   }}>
-      <div className={`theme-transition ${isDarkMode ? 'bg-gradient-to-b from-dark-calm-100 to-dark-calm-50 bg-stars-pattern-dark' : 'bg-gradient-to-b from-calm-100 to-white bg-stars-pattern'} min-h-screen text-text flex flex-col`}>
-        <Layout currentSection={currentSection} setCurrentSection={setCurrentSection} onEmergencyClick={handleEmergencyClick} showGlow={showWelcomeGlow}>
-          {showEmergencyMode && <EmergencyMode onClose={handleCloseEmergency} />}
-          <motion.div initial={{
+    <div className={`theme-transition ${isDarkMode ? 'bg-gradient-to-b from-dark-calm-100 to-dark-calm-50 bg-stars-pattern-dark' : 'bg-gradient-to-b from-calm-100 to-white bg-stars-pattern'} min-h-screen text-text flex flex-col`}>
+      <Layout currentSection={currentSection} setCurrentSection={setCurrentSection} onEmergencyClick={handleEmergencyClick} showGlow={showWelcomeGlow}>
+        {showEmergencyMode && <EmergencyMode onClose={handleCloseEmergency} />}
+        <motion.div initial={{
           opacity: 0
         }} animate={{
           opacity: 1
         }} transition={{
           duration: 0.5
         }} className="flex-1">
-            <AnimatePresence mode="wait">
-              <motion.div key={currentSection} initial={{
+          <AnimatePresence mode="wait">
+            <motion.div key={currentSection} initial={{
               opacity: 0,
               y: 20
             }} animate={{
@@ -82,17 +91,17 @@ export function App() {
             }} transition={{
               duration: 0.4
             }}>
-                {currentSection === 'home' && <Hero />}
-                {currentSection === 'chatbot' && <Chatbot />}
-                {currentSection === 'dashboard' && <Dashboard />}
-                {currentSection === 'resources' && <Resources />}
-                {currentSection === 'community' && <Community />}
-              </motion.div>
-            </AnimatePresence>
-          </motion.div>
-          {/* Étoiles animées en arrière-plan */}
-          <StarAnimation />
-        </Layout>
-      </div>
-    </ThemeContext.Provider>;
+              {currentSection === 'home' && <Hero />}
+              {currentSection === 'chatbot' && <Chatbot />}
+              {currentSection === 'dashboard' && <Dashboard />}
+              {currentSection === 'resources' && <Resources />}
+              {currentSection === 'community' && <Community />}
+            </motion.div>
+          </AnimatePresence>
+        </motion.div>
+        {/* Étoiles animées en arrière-plan */}
+        <StarAnimation />
+      </Layout>
+    </div>
+  </ThemeContext.Provider>;
 }
