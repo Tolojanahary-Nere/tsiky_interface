@@ -2,26 +2,44 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { SendIcon, SmileIcon, ImageIcon, MicIcon, InfoIcon } from 'lucide-react';
 
-const DJANGO_API_URL = 'https://tsiky-backend.onrender.com/chat/';
+const DJANGO_API_URL = 'https://tsiky-backend.onrender.com';  // Backend local pour tests
 
 // Fonction pour envoyer un message au backend Django
-async function sendMessageToDjango(message: string) {
+async function sendMessageToDjango(message: string, signal?: AbortSignal) {
   try {
     const response = await fetch(DJANGO_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message }),
+      signal,  // Pour permettre l'annulation
     });
 
     if (!response.ok) return ["Erreur serveur : " + response.status];
 
     const data = await response.json();
-    const botReply = typeof data.reply === "string"
-      ? data.reply.replace(/undefined/g, "").trim()  // <-- Nettoyage du 'undefined'
-      : "Désolé, je n'ai pas de réponse pour le moment.";
+    console.log("Réponse brute du backend:", data); // Debug
+
+    let botReply = "Désolé, je n'ai pas de réponse pour le moment.";
+
+    if (typeof data.reply === "string") {
+      // Nettoyage plus robuste du 'undefined'
+      botReply = data.reply
+        .replace(/undefined/gi, "")  // Supprime tous les 'undefined' (case insensitive)
+        .replace(/\s+/g, " ")         // Normalise les espaces multiples
+        .trim();                      // Supprime les espaces aux extrémités
+    } else if (data.reply !== undefined && data.reply !== null) {
+      // Si ce n'est pas une string mais existe, convertir et nettoyer
+      botReply = String(data.reply)
+        .replace(/undefined/gi, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
 
     return [botReply];
-  } catch (err) {
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      return ["⏱️ La requête a pris trop de temps (30s). Réessaie avec une question plus courte."];
+    }
     console.error("Error in sendMessageToDjango:", err);
     return ["Désolé, je n'arrive pas à contacter le serveur."];
   }
@@ -32,21 +50,38 @@ const Typewriter: React.FC<{ text?: string; speed?: number }> = ({ text = "", sp
   const [displayedText, setDisplayedText] = useState("");
 
   useEffect(() => {
+    console.log("🔍 Typewriter - Texte reçu:", text);
+
+    // Nettoyage robuste du texte
+    const cleanText = String(text || "")
+      .replace(/undefined/gi, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    console.log("🔍 Typewriter - Texte nettoyé:", cleanText);
+
+    if (!cleanText) {
+      setDisplayedText("");
+      return;
+    }
+
+    // Réinitialiser avant de commencer
     setDisplayedText("");
-    const cleanText = String(text || "").replace(/undefined/g, "").trim();
-    if (!cleanText) return;
 
     let i = 0;
     const interval = setInterval(() => {
-      setDisplayedText(prev => prev + cleanText[i]);
-      i++;
-      if (i >= cleanText.length) clearInterval(interval);
+      if (i < cleanText.length) {
+        setDisplayedText(cleanText.substring(0, i + 1));
+        i++;
+      } else {
+        clearInterval(interval);
+      }
     }, speed);
 
     return () => clearInterval(interval);
   }, [text, speed]);
 
-  return <span>{displayedText}</span>;
+  return <>{displayedText}</>;
 };
 
 // Composant principal Chatbot
@@ -61,6 +96,7 @@ export const Chatbot: React.FC = () => {
   ]);
   const [inputText, setInputText] = useState('');
   const [isBotTyping, setIsBotTyping] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0);
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
@@ -75,24 +111,40 @@ export const Chatbot: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
     setIsBotTyping(true);
+    setElapsedTime(0);
 
-    const responses = await sendMessageToDjango(userMessage.text);
+    // Timeout de 30 secondes
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 30000);
 
-    responses
-      .filter(text => text !== undefined && text !== null)
-      .forEach(text => {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: prev.length + 1,
-            sender: 'bot',
-            text: String(text),
-            timestamp: new Date(),
-          },
-        ]);
-      });
+    // Compteur de temps
+    const startTime = Date.now();
+    const progressInterval = setInterval(() => {
+      setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
 
-    setIsBotTyping(false);
+    try {
+      const responses = await sendMessageToDjango(userMessage.text, abortController.signal);
+
+      responses
+        .filter(text => text !== undefined && text !== null)
+        .forEach(text => {
+          setMessages(prev => [
+            ...prev,
+            {
+              id: prev.length + 1,
+              sender: 'bot',
+              text: String(text),
+              timestamp: new Date(),
+            },
+          ]);
+        });
+    } finally {
+      clearTimeout(timeoutId);
+      clearInterval(progressInterval);
+      setIsBotTyping(false);
+      setElapsedTime(0);
+    }
   };
 
   return (
@@ -135,8 +187,14 @@ export const Chatbot: React.FC = () => {
 
           {isBotTyping && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 flex justify-start">
-              <div className="max-w-xs sm:max-w-sm px-4 py-2 rounded-lg bg-slate-700 text-slate-200 rounded-bl-none opacity-70">
-                <p>Le bot écrit...</p>
+              <div className="max-w-xs sm:max-w-sm px-4 py-2 rounded-lg bg-slate-700 text-slate-200 rounded-bl-none">
+                <p className="flex items-center gap-2">
+                  <span className="animate-pulse">🤔</span>
+                  Le bot réfléchit...
+                  {elapsedTime > 0 && (
+                    <span className="text-xs opacity-70">({elapsedTime}s)</span>
+                  )}
+                </p>
               </div>
             </motion.div>
           )}
