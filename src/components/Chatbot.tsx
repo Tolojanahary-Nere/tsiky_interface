@@ -86,26 +86,51 @@ const Typewriter: React.FC<{ text?: string; speed?: number }> = ({ text = "", sp
 
 // Composant principal Chatbot
 export const Chatbot: React.FC = () => {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      sender: 'bot',
-      text: "Bonjour, je suis là pour t'écouter et t'aider. Comment te sens-tu aujourd'hui ?",
-      timestamp: new Date(),
+  // Charger les messages depuis localStorage ou utiliser le message par défaut
+  const [messages, setMessages] = useState(() => {
+    const savedMessages = localStorage.getItem('tsiky_chat_history');
+    if (savedMessages) {
+      try {
+        const parsed = JSON.parse(savedMessages);
+        // Convertir les timestamps en objets Date et marquer comme anciens (pas de typewriter)
+        return parsed.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp),
+          isNew: false  // Messages chargés = pas d'animation
+        }));
+      } catch (error) {
+        console.error('Erreur lors du chargement de l\'historique:', error);
+      }
     }
-  ]);
+    // Message par défaut si pas d'historique
+    return [
+      {
+        id: 1,
+        sender: 'bot',
+        text: "Bonjour, je suis là pour t'écouter et t'aider. Comment te sens-tu aujourd'hui ?",
+        timestamp: new Date(),
+        isNew: false  // Message initial = pas d'animation
+      }
+    ];
+  });
   const [inputText, setInputText] = useState('');
   const [isBotTyping, setIsBotTyping] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
+
+  // Sauvegarder les messages dans localStorage à chaque changement
+  useEffect(() => {
+    localStorage.setItem('tsiky_chat_history', JSON.stringify(messages));
+  }, [messages]);
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
 
     const userMessage = {
       id: messages.length + 1,
-      sender: 'user',
+      sender: 'user' as const,
       text: inputText,
       timestamp: new Date(),
+      isNew: true  // Nouveau message utilisateur
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -133,9 +158,10 @@ export const Chatbot: React.FC = () => {
             ...prev,
             {
               id: prev.length + 1,
-              sender: 'bot',
+              sender: 'bot' as const,
               text: String(text),
               timestamp: new Date(),
+              isNew: true  // Nouveau message bot = animation typewriter
             },
           ]);
         });
@@ -144,6 +170,21 @@ export const Chatbot: React.FC = () => {
       clearInterval(progressInterval);
       setIsBotTyping(false);
       setElapsedTime(0);
+    }
+  };
+
+  // Fonction pour effacer l'historique
+  const clearHistory = () => {
+    if (confirm("Êtes-vous sûr de vouloir effacer tout l'historique de conversation ?")) {
+      const defaultMessage = {
+        id: 1,
+        sender: 'bot' as const,
+        text: "Bonjour, je suis là pour t'écouter et t'aider. Comment te sens-tu aujourd'hui ?",
+        timestamp: new Date(),
+        isNew: false
+      };
+      setMessages([defaultMessage]);
+      localStorage.removeItem('tsiky_chat_history');
     }
   };
 
@@ -172,7 +213,7 @@ export const Chatbot: React.FC = () => {
             >
               <div className={`max-w-xs sm:max-w-sm px-4 py-2 rounded-lg ${message.sender === 'user' ? 'bg-lavender-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-200 rounded-bl-none'}`}>
                 <p>
-                  {message.sender === "bot"
+                  {message.sender === "bot" && (message as any).isNew !== false
                     ? <Typewriter text={message.text} speed={25} />
                     : message.text}
                 </p>
