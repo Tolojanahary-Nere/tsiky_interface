@@ -1,7 +1,8 @@
-export default {content: [
-  './index.html',
-  './src/**/*.{js,ts,jsx,tsx}'
-],
+export default {
+  content: [
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx}'
+  ],
   darkMode: 'class',
   theme: {
     extend: {
@@ -117,7 +118,45 @@ export default {content: [
           '0%': { boxShadow: '0 0 0 rgba(173, 216, 230, 0)' },
           '50%': { boxShadow: '0 0 20px rgba(173, 216, 230, 0.5)' },
           '100%': { boxShadow: '0 0 0 rgba(173, 216, 230, 0)' },
-        }
+        },
+        gradient: {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+        pulseGlow: {
+          '0%, 100%': { boxShadow: '0 0 20px rgba(255, 143, 82, 0.4), 0 0 40px rgba(255, 143, 82, 0.2)' },
+          '50%': { boxShadow: '0 0 30px rgba(255, 143, 82, 0.6), 0 0 60px rgba(255, 143, 82, 0.3)' },
+        },
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+        bounceSoft: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-5px)' },
+        },
+        scalePulse: {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.05)' },
+        },
+        wave: {
+          '0%': { transform: 'rotate(0deg)' },
+          '10%': { transform: 'rotate(14deg)' },
+          '20%': { transform: 'rotate(-8deg)' },
+          '30%': { transform: 'rotate(14deg)' },
+          '40%': { transform: 'rotate(-4deg)' },
+          '50%': { transform: 'rotate(10deg)' },
+          '60%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(0deg)' },
+        },
+        floatUp: {
+          '0%': { transform: 'translateY(0)', opacity: 1 },
+          '100%': { transform: 'translateY(-100px)', opacity: 0 },
+        },
+        rotateHue: {
+          '0%': { filter: 'hue-rotate(0deg)' },
+          '100%': { filter: 'hue-rotate(360deg)' },
+        },
       },
       animation: {
         float: 'float 6s ease-in-out infinite',
@@ -127,6 +166,14 @@ export default {content: [
         starAppear: 'starAppear 0.5s ease-out forwards',
         goldenGlow: 'goldenGlow 2s ease-in-out',
         moonGlow: 'moonGlow 2s ease-in-out',
+        gradient: 'gradient 8s ease infinite',
+        pulseGlow: 'pulseGlow 2s ease-in-out infinite',
+        shimmer: 'shimmer 2s ease-in-out infinite',
+        bounceSoft: 'bounceSoft 2s ease-in-out infinite',
+        scalePulse: 'scalePulse 3s ease-in-out infinite',
+        wave: 'wave 2s ease-in-out',
+        floatUp: 'floatUp 3s ease-out',
+        rotateHue: 'rotateHue 10s linear infinite',
       }
     },
   },

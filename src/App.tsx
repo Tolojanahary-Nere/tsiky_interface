@@ -8,6 +8,7 @@ import { Resources } from './components/Resources';
 import { EmergencyMode } from './components/EmergencyMode';
 import { Community } from './components/Community';
 import { StarAnimation } from './components/animations/StarAnimation';
+import { MagicParticles } from './components/animations/MagicParticles';
 import './i18n/config';  // Import i18n configuration
 // Contexte pour le thème
 export const ThemeContext = createContext({
@@ -99,6 +100,8 @@ export function App() {
             </motion.div>
           </AnimatePresence>
         </motion.div>
+        {/* Magic floating particles */}
+        <MagicParticles isDarkMode={isDarkMode} />
         {/* Étoiles animées en arrière-plan */}
         <StarAnimation />
       </Layout>

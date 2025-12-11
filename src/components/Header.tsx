@@ -1,8 +1,9 @@
 import React, { useState, useContext } from 'react';
 import { motion } from 'framer-motion';
-import { MenuIcon, XIcon, VolumeIcon, Volume2Icon, HeartPulseIcon, CloudIcon, SunIcon, MoonIcon } from 'lucide-react';
+import { MenuIcon, XIcon, HeartPulseIcon, CloudIcon, SunIcon, MoonIcon } from 'lucide-react';
 import { ThemeContext } from '../App';
 import { LanguageSelector } from './LanguageSelector';
+import { BackgroundMusic } from './BackgroundMusic';
 import { useTranslation } from 'react-i18next';
 interface HeaderProps {
   currentSection: string;
@@ -49,7 +50,6 @@ export const Header: React.FC<HeaderProps> = ({
   };
   const toggleSound = () => {
     setIsSoundOn(!isSoundOn);
-    // Sound functionality would be implemented here
   };
   return <header className={`${isDarkMode ? 'bg-dark-calm-100/90 backdrop-blur-sm' : 'bg-white/90 backdrop-blur-sm'} sticky top-0 z-50 shadow-md theme-transition`}>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -80,13 +80,11 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
         {/* Right side controls */}
         <div className="flex items-center space-x-4">
-          <motion.button whileHover={{
-            scale: 1.1
-          }} whileTap={{
-            scale: 0.95
-          }} onClick={toggleSound} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-dark-calm-200/50' : 'hover:bg-calm-50'} theme-transition`} aria-label={isSoundOn ? 'Désactiver le son' : 'Activer le son'}>
-            {isSoundOn ? <Volume2Icon size={20} className={isDarkMode ? 'text-dark-comfort-500' : 'text-comfort-500'} /> : <VolumeIcon size={20} className={isDarkMode ? 'text-dark-text' : 'text-text'} />}
-          </motion.button>
+          <BackgroundMusic
+            isPlaying={isSoundOn}
+            onToggle={toggleSound}
+            isDarkMode={isDarkMode}
+          />
           <motion.button whileHover={{
             scale: 1.1
           }} whileTap={{

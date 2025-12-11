@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { SendIcon, SmileIcon, ImageIcon, MicIcon, InfoIcon } from 'lucide-react';
+import { SendIcon, SmileIcon, ImageIcon, MicIcon, InfoIcon, Trash2Icon } from 'lucide-react';
 
 const DJANGO_API_URL = 'https://tsiky-backend.onrender.com/chat/';  // Backend de production
 
@@ -113,6 +113,7 @@ export const Chatbot: React.FC = () => {
       }
     ];
   });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [inputText, setInputText] = useState('');
   const [isBotTyping, setIsBotTyping] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -175,62 +176,98 @@ export const Chatbot: React.FC = () => {
 
   // Fonction pour effacer l'historique
   const clearHistory = () => {
-    if (confirm("Êtes-vous sûr de vouloir effacer tout l'historique de conversation ?")) {
-      const defaultMessage = {
-        id: 1,
-        sender: 'bot' as const,
-        text: "Bonjour, je suis là pour t'écouter et t'aider. Comment te sens-tu aujourd'hui ?",
-        timestamp: new Date(),
-        isNew: false
-      };
-      setMessages([defaultMessage]);
-      localStorage.removeItem('tsiky_chat_history');
-    }
+    const defaultMessage = {
+      id: 1,
+      sender: 'bot' as const,
+      text: "Bonjour, je suis là pour t'écouter et t'aider. Comment te sens-tu aujourd'hui ?",
+      timestamp: new Date(),
+      isNew: false
+    };
+    setMessages([defaultMessage]);
+    localStorage.removeItem('tsiky_chat_history');
+    setShowDeleteConfirm(false);
   };
 
   return (
-    <section className="max-w-2xl mx-auto">
-      <div className="bg-slate-800 rounded-lg shadow-lg overflow-hidden border border-slate-700">
+    <section className="max-w-4xl mx-auto px-4 py-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-light rounded-3xl shadow-2xl overflow-hidden border border-white/20 backdrop-blur-xl"
+      >
         {/* Header */}
-        <div className="bg-slate-700 p-4 flex items-center">
-          <div className="w-3 h-3 bg-lavender-400 rounded-full mr-2 animate-pulse"></div>
-          <h2 className="text-lavender-100 font-medium">Assistant Bienveillant</h2>
-          <div className="ml-auto flex items-center">
-            <button type="button" aria-label="Infos" className="p-2 text-slate-300 hover:text-lavender-300 rounded-full">
+        <div className="glass p-5 flex items-center border-b border-white/10">
+          <motion.div
+            className="w-3 h-3 bg-gradient-to-r from-lavender-400 to-lavender-600 rounded-full mr-3"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          />
+          <h2 className="text-lavender-100 font-comic text-lg">Assistant Bienveillant</h2>
+          <div className="ml-auto flex items-center gap-2">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-2 text-slate-300 hover:text-red-400 rounded-full hover:bg-red-500/10 transition-colors"
+              aria-label="Supprimer l'historique"
+            >
+              <Trash2Icon size={18} />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              type="button"
+              className="p-2 text-slate-300 hover:text-lavender-300 rounded-full hover:bg-lavender-500/10 transition-colors"
+              aria-label="Infos"
+            >
               <InfoIcon size={18} />
-            </button>
+            </motion.button>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="h-96 overflow-y-auto p-4 bg-slate-900/50">
-          {messages.map(message => (
+        <div className="h-[500px] overflow-y-auto p-6 bg-gradient-to-b from-slate-900/30 to-slate-900/50 backdrop-blur-sm">
+          {messages.map((message, index) => (
             <motion.div
               key={message.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`mb-4 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              initial={{ opacity: 0, x: message.sender === 'user' ? 20 : -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className={`mb-5 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`max-w-xs sm:max-w-sm px-4 py-2 rounded-lg ${message.sender === 'user' ? 'bg-lavender-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-200 rounded-bl-none'}`}>
-                <p>
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                className={`max-w-md px-5 py-3 rounded-2xl shadow-lg ${message.sender === 'user' ? 'bg-gradient-to-br from-lavender-600 to-lavender-700 text-white rounded-br-sm' : 'glass-light text-slate-100 rounded-bl-sm'}`}
+              >
+                <p className="text-sm leading-relaxed">
                   {message.sender === "bot" && (message as any).isNew !== false
                     ? <Typewriter text={message.text} speed={25} />
                     : message.text}
                 </p>
-                <div className="text-right mt-1">
-                  <span className="text-xs opacity-70">
+                <div className="text-right mt-2">
+                  <span className="text-xs opacity-60">
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-              </div>
+              </motion.div>
             </motion.div>
           ))}
 
           {isBotTyping && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 flex justify-start">
-              <div className="max-w-xs sm:max-w-sm px-4 py-2 rounded-lg bg-slate-700 text-slate-200 rounded-bl-none">
-                <p className="flex items-center gap-2">
-                  <span className="animate-pulse">🤔</span>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-5 flex justify-start"
+            >
+              <div className="glass-light px-5 py-3 rounded-2xl rounded-bl-sm shadow-lg">
+                <p className="flex items-center gap-2 text-slate-200">
+                  <motion.span
+                    animate={{ rotate: [0, 360] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  >
+                    🤔
+                  </motion.span>
                   Le bot réfléchit...
                   {elapsedTime > 0 && (
                     <span className="text-xs opacity-70">({elapsedTime}s)</span>
@@ -242,26 +279,110 @@ export const Chatbot: React.FC = () => {
         </div>
 
         {/* Input */}
-        <div className="p-4 bg-slate-800 border-t border-slate-700">
-          <div className="flex items-center">
-            <button type="button" aria-label="Emoji" className="p-2 text-slate-400 hover:text-lavender-300 rounded-full"><SmileIcon size={20} /></button>
-            <button type="button" aria-label="Image" className="p-2 text-slate-400 hover:text-lavender-300 rounded-full"><ImageIcon size={20} /></button>
+        <div className="p-5 glass border-t border-white/10">
+          <div className="flex items-center gap-2">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              type="button"
+              className="p-2 text-slate-400 hover:text-lavender-300 rounded-full hover:bg-lavender-500/10 transition-colors"
+              aria-label="Emoji"
+            >
+              <SmileIcon size={20} />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              type="button"
+              className="p-2 text-slate-400 hover:text-lavender-300 rounded-full hover:bg-lavender-500/10 transition-colors"
+              aria-label="Image"
+            >
+              <ImageIcon size={20} />
+            </motion.button>
             <input
               type="text"
               value={inputText}
               onChange={e => setInputText(e.target.value)}
               onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
               placeholder="Écris ton message ici..."
-              className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 mx-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-lavender-400"
+              className="flex-1 glass-light border border-white/20 rounded-xl px-5 py-3 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all"
             />
-            <button type="button" aria-label="Vocal" className="p-2 text-slate-400 hover:text-lavender-300 rounded-full"><MicIcon size={20} /></button>
-            <button type="button" aria-label="Envoyer" onClick={handleSendMessage} className="p-2 bg-lavender-500 hover:bg-lavender-400 text-white rounded-full"><SendIcon size={20} /></button>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              type="button"
+              className="p-2 text-slate-400 hover:text-lavender-300 rounded-full hover:bg-lavender-500/10 transition-colors"
+              aria-label="Vocal"
+            >
+              <MicIcon size={20} />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              type="button"
+              onClick={handleSendMessage}
+              className="p-3 bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-400 hover:to-lavender-500 text-white rounded-xl shadow-lg animate-pulseGlow transition-all"
+              aria-label="Envoyer"
+            >
+              <SendIcon size={20} />
+            </motion.button>
           </div>
-          <div className="mt-2 text-xs text-center text-slate-500">
-            Cet assistant est là pour t'écouter, mais ne remplace pas un professionnel de santé.
+          <div className="mt-3 text-xs text-center text-slate-400">
+            💜 Cet assistant est là pour t'écouter, mais ne remplace pas un professionnel de santé.
           </div>
         </div>
-      </div>
+      </motion.div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            onClick={e => e.stopPropagation()}
+            className="glass-light rounded-2xl p-6 max-w-md w-full shadow-2xl border border-white/20"
+          >
+            <div className="text-center">
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 0.5 }}
+                className="inline-block mb-4"
+              >
+                <Trash2Icon size={48} className="text-red-400" />
+              </motion.div>
+              <h3 className="text-xl font-comic text-white mb-2">Supprimer l'historique ?</h3>
+              <p className="text-slate-300 mb-6">
+                Es-tu sûr(e) de vouloir effacer toute la conversation ? Cette action est irréversible.
+              </p>
+              <div className="flex gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 px-4 py-2 glass border border-white/20 text-white rounded-xl hover:bg-white/10 transition-colors"
+                >
+                  Annuler
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={clearHistory}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-400 hover:to-red-500 shadow-lg transition-all"
+                >
+                  Supprimer
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </section>
   );
 };
