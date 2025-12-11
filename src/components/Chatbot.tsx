@@ -38,7 +38,7 @@ async function sendMessageToDjango(message: string, signal?: AbortSignal) {
     return [botReply];
   } catch (err: any) {
     if (err.name === 'AbortError') {
-      return ["⏱️ La requête a pris trop de temps (30s). Réessaie avec une question plus courte."];
+      return ["⏱️ La requête a pris trop de temps (90s). Le serveur redémarre peut-être, réessaie dans une minute."];
     }
     console.error("Error in sendMessageToDjango:", err);
     return ["Désolé, je n'arrive pas à contacter le serveur."];
@@ -177,9 +177,9 @@ export const Chatbot: React.FC = () => {
     setIsBotTyping(true);
     setElapsedTime(0);
 
-    // Timeout de 30 secondes
+    // Timeout de 90 secondes pour éviter les coupures sur les serveurs lents (cold start)
     const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), 30000);
+    const timeoutId = setTimeout(() => abortController.abort(), 90000);
 
     // Compteur de temps
     const startTime = Date.now();
