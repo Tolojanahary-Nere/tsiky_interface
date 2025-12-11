@@ -18,7 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   showGlow = false
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSoundOn, setIsSoundOn] = useState(false);
+  const [isSoundOn, setIsSoundOn] = useState(false); // Music disabled by default
   const {
     isDarkMode,
     toggleDarkMode

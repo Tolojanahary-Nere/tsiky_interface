@@ -117,6 +117,44 @@ export const Chatbot: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [isBotTyping, setIsBotTyping] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const recognitionRef = React.useRef<any>(null);
+
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'fr-FR';
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInputText(transcript);
+        setIsRecording(false);
+      };
+
+      recognitionRef.current.onerror = () => {
+        setIsRecording(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsRecording(false);
+      };
+    }
+  }, []);
+
+  // Scroll to bottom when new messages arrive
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isBotTyping]);
 
   // Sauvegarder les messages dans localStorage à chaque changement
   useEffect(() => {
@@ -188,8 +226,24 @@ export const Chatbot: React.FC = () => {
     setShowDeleteConfirm(false);
   };
 
+  // Fonction pour gérer l'enregistrement vocal
+  const toggleVoiceRecording = () => {
+    if (!recognitionRef.current) {
+      alert('La reconnaissance vocale n\'est pas supportée sur votre navigateur.');
+      return;
+    }
+
+    if (isRecording) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+    } else {
+      recognitionRef.current.start();
+      setIsRecording(true);
+    }
+  };
+
   return (
-    <section className="max-w-4xl mx-auto px-4 py-6">
+    <section className="max-w-6xl mx-auto px-4 py-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -227,7 +281,7 @@ export const Chatbot: React.FC = () => {
         </div>
 
         {/* Messages */}
-        <div className="h-[500px] overflow-y-auto p-6 bg-gradient-to-b from-slate-900/30 to-slate-900/50 backdrop-blur-sm">
+        <div className="h-[550px] overflow-y-auto p-6 bg-gradient-to-b from-slate-900/30 to-slate-900/50 backdrop-blur-sm">
           {messages.map((message, index) => (
             <motion.div
               key={message.id}
@@ -238,7 +292,10 @@ export const Chatbot: React.FC = () => {
             >
               <motion.div
                 whileHover={{ scale: 1.02 }}
-                className={`max-w-md px-5 py-3 rounded-2xl shadow-lg ${message.sender === 'user' ? 'bg-gradient-to-br from-lavender-600 to-lavender-700 text-white rounded-br-sm' : 'glass-light text-slate-100 rounded-bl-sm'}`}
+                className={`max-w-md px-5 py-3 rounded-2xl shadow-lg ${message.sender === 'user'
+                  ? 'bg-gradient-to-br from-lavender-600 to-lavender-700 text-white rounded-br-sm'
+                  : 'bg-white/90 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 rounded-bl-sm border border-slate-200 dark:border-transparent'
+                  }`}
               >
                 <p className="text-sm leading-relaxed">
                   {message.sender === "bot" && (message as any).isNew !== false
@@ -260,8 +317,8 @@ export const Chatbot: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               className="mb-5 flex justify-start"
             >
-              <div className="glass-light px-5 py-3 rounded-2xl rounded-bl-sm shadow-lg">
-                <p className="flex items-center gap-2 text-slate-200">
+              <div className="bg-white/90 dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 px-5 py-3 rounded-2xl rounded-bl-sm shadow-lg border border-slate-200 dark:border-transparent">
+                <p className="flex items-center gap-2">
                   <motion.span
                     animate={{ rotate: [0, 360] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -276,6 +333,9 @@ export const Chatbot: React.FC = () => {
               </div>
             </motion.div>
           )}
+
+          {/* Invisible element for auto-scroll */}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Input */}
@@ -305,13 +365,14 @@ export const Chatbot: React.FC = () => {
               onChange={e => setInputText(e.target.value)}
               onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
               placeholder="Écris ton message ici..."
-              className="flex-1 glass-light border border-white/20 rounded-xl px-5 py-3 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all"
+              className="flex-1 glass-light border border-white/20 rounded-xl px-5 py-3 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all"
             />
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               type="button"
-              className="p-2 text-slate-400 hover:text-lavender-300 rounded-full hover:bg-lavender-500/10 transition-colors"
+              onClick={toggleVoiceRecording}
+              className={`p-2 rounded-full transition-colors ${isRecording ? 'text-red-500 bg-red-100 animate-pulse' : 'text-slate-400 hover:text-lavender-300 hover:bg-lavender-500/10'}`}
               aria-label="Vocal"
             >
               <MicIcon size={20} />

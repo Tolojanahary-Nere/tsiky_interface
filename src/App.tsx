@@ -1,5 +1,4 @@
 import React, { useEffect, useState, createContext } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from './components/Layout';
 import { Hero } from './components/Hero';
 import { Chatbot } from './components/Chatbot';
@@ -22,19 +21,25 @@ export function App() {
   });
   const [showEmergencyMode, setShowEmergencyMode] = useState(false);
   const [showWelcomeGlow, setShowWelcomeGlow] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false); // Light mode by default
 
   // Sauvegarder la section actuelle
   useEffect(() => {
     localStorage.setItem('tsiky_current_section', currentSection);
   }, [currentSection]);
+
   // Vérifier si le mode sombre est préféré ou sauvegardé
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (savedTheme === 'dark' || !savedTheme && prefersDark) {
+    if (savedTheme === 'dark') {
       setIsDarkMode(true);
       document.documentElement.classList.add('dark');
+    } else {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
+      if (!savedTheme) {
+        localStorage.setItem('theme', 'light');
+      }
     }
   }, []);
   // Fonction pour basculer entre les modes
@@ -72,34 +77,13 @@ export function App() {
     <div className={`theme-transition ${isDarkMode ? 'bg-gradient-to-b from-dark-calm-100 to-dark-calm-50 bg-stars-pattern-dark' : 'bg-gradient-to-b from-calm-100 to-white bg-stars-pattern'} min-h-screen text-text flex flex-col`}>
       <Layout currentSection={currentSection} setCurrentSection={setCurrentSection} onEmergencyClick={handleEmergencyClick} showGlow={showWelcomeGlow}>
         {showEmergencyMode && <EmergencyMode onClose={handleCloseEmergency} />}
-        <motion.div initial={{
-          opacity: 0
-        }} animate={{
-          opacity: 1
-        }} transition={{
-          duration: 0.5
-        }} className="flex-1">
-          <AnimatePresence mode="wait">
-            <motion.div key={currentSection} initial={{
-              opacity: 0,
-              y: 20
-            }} animate={{
-              opacity: 1,
-              y: 0
-            }} exit={{
-              opacity: 0,
-              y: -20
-            }} transition={{
-              duration: 0.4
-            }}>
-              {currentSection === 'home' && <Hero />}
-              {currentSection === 'chatbot' && <Chatbot />}
-              {currentSection === 'dashboard' && <Dashboard />}
-              {currentSection === 'resources' && <Resources />}
-              {currentSection === 'community' && <Community />}
-            </motion.div>
-          </AnimatePresence>
-        </motion.div>
+        <div className="flex-1">
+          {currentSection === 'home' && <Hero setCurrentSection={setCurrentSection} />}
+          {currentSection === 'chatbot' && <Chatbot />}
+          {currentSection === 'dashboard' && <Dashboard />}
+          {currentSection === 'resources' && <Resources />}
+          {currentSection === 'community' && <Community />}
+        </div>
         {/* Magic floating particles */}
         <MagicParticles isDarkMode={isDarkMode} />
         {/* Étoiles animées en arrière-plan */}

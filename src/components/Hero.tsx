@@ -4,7 +4,12 @@ import { ArrowRightIcon } from 'lucide-react';
 import { BearMascot } from './animations/BearMascot';
 import { FlowerBloom } from './animations/FlowerBloom';
 import { MiniSun } from './animations/MiniSun';
-export const Hero: React.FC = () => {
+
+interface HeroProps {
+  setCurrentSection?: (section: string) => void;
+}
+
+export const Hero: React.FC<HeroProps> = ({ setCurrentSection }) => {
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [showStars, setShowStars] = useState(false);
   const inspirationalMessages = [
@@ -82,7 +87,13 @@ export const Hero: React.FC = () => {
           thérapeutiques, ou rejoins notre communauté de soutien.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8 relative">
-          <motion.button className="btn-comfort flex items-center justify-center" onClick={handleButtonClick}>
+          <motion.button
+            className="btn-comfort flex items-center justify-center"
+            onClick={() => {
+              handleButtonClick();
+              setCurrentSection?.('resources');
+            }}
+          >
             <span>Explorer</span>
             <ArrowRightIcon size={18} className="ml-2" />
             {/* Étoiles qui apparaissent au clic */}
@@ -102,9 +113,15 @@ export const Hero: React.FC = () => {
               }}>
                 ★
               </motion.div>)}
-            </>}
+            </>
+            }
           </motion.button>
-          <motion.button className="btn-outline">Discuter</motion.button>
+          <motion.button
+            className="btn-outline"
+            onClick={() => setCurrentSection?.('chatbot')}
+          >
+            Discuter
+          </motion.button>
         </div>
       </motion.div>
       <div className="wave-divider my-16"></div>

@@ -22,49 +22,78 @@ export const BackgroundMusic: React.FC<BackgroundMusicProps> = ({
         if (!audioRef.current) {
             const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
 
-            // Create oscillators for a calming ambient sound
-            const oscillator1 = audioContext.createOscillator();
-            const oscillator2 = audioContext.createOscillator();
-            const oscillator3 = audioContext.createOscillator();
+            // Create multiple oscillators for richer, less repetitive sound
+            const oscillators: OscillatorNode[] = [];
+            const gains: GainNode[] = [];
 
-            const gainNode = audioContext.createGain();
+            // Soothing chord progression notes (C major pentatonic scale)
+            const frequencies = [
+                261.63, // C4
+                293.66, // D4
+                329.63, // E4
+                392.00, // G4
+                440.00, // A4
+            ];
+
             const masterGain = audioContext.createGain();
-
-            // Set frequencies for a calming chord (C major with overtones)
-            oscillator1.type = 'sine';
-            oscillator1.frequency.setValueAtTime(261.63, audioContext.currentTime); // C4
-
-            oscillator2.type = 'sine';
-            oscillator2.frequency.setValueAtTime(329.63, audioContext.currentTime); // E4
-
-            oscillator3.type = 'sine';
-            oscillator3.frequency.setValueAtTime(392.00, audioContext.currentTime); // G4
-
-            // Set very low volume for ambient background
-            gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
             masterGain.gain.setValueAtTime(volume, audioContext.currentTime);
 
-            // Connect nodes
-            oscillator1.connect(gainNode);
-            oscillator2.connect(gainNode);
-            oscillator3.connect(gainNode);
-            gainNode.connect(masterGain);
+            // Create a filter for gentle sweeping effect
+            const filter = audioContext.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(800, audioContext.currentTime);
+            filter.Q.setValueAtTime(1, audioContext.currentTime);
+
+            // Create oscillators with varying frequencies for ambient sound
+            frequencies.forEach((freq, index) => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, audioContext.currentTime);
+
+                // Vary the volume of each oscillator for depth
+                const baseVolume = 0.015 / (index + 1); // Quieter for higher notes
+                gain.gain.setValueAtTime(baseVolume, audioContext.currentTime);
+
+                // Add gentle LFO (Low Frequency Oscillator) for subtle variation
+                const lfo = audioContext.createOscillator();
+                const lfoGain = audioContext.createGain();
+                lfo.frequency.setValueAtTime(0.1 + index * 0.05, audioContext.currentTime);
+                lfoGain.gain.setValueAtTime(baseVolume * 0.3, audioContext.currentTime);
+
+                lfo.connect(lfoGain);
+                lfoGain.connect(gain.gain);
+
+                osc.connect(gain);
+                gain.connect(filter);
+
+                oscillators.push(osc);
+                gains.push(gain);
+                oscillators.push(lfo);
+            });
+
+            filter.connect(masterGain);
             masterGain.connect(audioContext.destination);
 
             // Store references
             (audioRef as any).current = {
                 context: audioContext,
-                oscillators: [oscillator1, oscillator2, oscillator3],
-                gainNode: masterGain,
+                oscillators,
+                gains,
+                masterGain,
+                filter,
                 start: () => {
-                    oscillator1.start();
-                    oscillator2.start();
-                    oscillator3.start();
+                    oscillators.forEach(osc => osc.start());
                 },
                 stop: () => {
-                    oscillator1.stop();
-                    oscillator2.stop();
-                    oscillator3.stop();
+                    oscillators.forEach(osc => {
+                        try {
+                            osc.stop();
+                        } catch (e) {
+                            // Already stopped
+                        }
+                    });
                 }
             };
         }
@@ -81,8 +110,8 @@ export const BackgroundMusic: React.FC<BackgroundMusicProps> = ({
     }, []);
 
     useEffect(() => {
-        if (audioRef.current && (audioRef.current as any).gainNode) {
-            (audioRef.current as any).gainNode.gain.setValueAtTime(volume, (audioRef.current as any).context.currentTime);
+        if (audioRef.current && (audioRef.current as any).masterGain) {
+            (audioRef.current as any).masterGain.gain.setValueAtTime(volume, (audioRef.current as any).context.currentTime);
         }
     }, [volume]);
 
