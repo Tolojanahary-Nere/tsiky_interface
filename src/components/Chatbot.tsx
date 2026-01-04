@@ -1,449 +1,200 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { SendIcon, SmileIcon, ImageIcon, MicIcon, InfoIcon, Trash2Icon } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { SendIcon, SmileIcon, ImageIcon, MicIcon, Trash2Icon, StopCircle } from 'lucide-react';
 
-const DJANGO_API_URL = 'https://tsiky-backend.onrender.com/chat/';  // Backend de production
+const DJANGO_API_URL = 'https://tsiky-backend.onrender.com/chat/';
 
-// Fonction pour envoyer un message au backend Django
-async function sendMessageToDjango(message: string, signal?: AbortSignal) {
-  try {
-    const response = await fetch(DJANGO_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message }),
-      signal,  // Pour permettre l'annulation
-    });
-
-    if (!response.ok) return ["Erreur serveur : " + response.status];
-
-    const data = await response.json();
-    console.log("Réponse brute du backend:", data); // Debug
-
-    let botReply = "Désolé, je n'ai pas de réponse pour le moment.";
-
-    if (typeof data.reply === "string") {
-      // Nettoyage plus robuste du 'undefined'
-      botReply = data.reply
-        .replace(/undefined/gi, "")  // Supprime tous les 'undefined' (case insensitive)
-        .replace(/\s+/g, " ")         // Normalise les espaces multiples
-        .trim();                      // Supprime les espaces aux extrémités
-    } else if (data.reply !== undefined && data.reply !== null) {
-      // Si ce n'est pas une string mais existe, convertir et nettoyer
-      botReply = String(data.reply)
-        .replace(/undefined/gi, "")
-        .replace(/\s+/g, " ")
-        .trim();
-    }
-
-    return [botReply];
-  } catch (err: any) {
-    if (err.name === 'AbortError') {
-      return ["⏱️ La requête a pris trop de temps (90s). Le serveur redémarre peut-être, réessaie dans une minute."];
-    }
-    console.error("Error in sendMessageToDjango:", err);
-    return ["Désolé, je n'arrive pas à contacter le serveur."];
-  }
+interface Message {
+  id: string; // Changed to string for UUIDs if needed, or keeping number is fine but string is more robust
+  sender: 'user' | 'bot';
+  text: string;
+  timestamp: Date;
+  isStreaming?: boolean;
 }
 
-// Composant Typewriter pour effet machine à taper
-const Typewriter: React.FC<{ text?: string; speed?: number }> = ({ text = "", speed = 30 }) => {
-  const [displayedText, setDisplayedText] = useState("");
-
-  useEffect(() => {
-    console.log("🔍 Typewriter - Texte reçu:", text);
-
-    // Nettoyage robuste du texte
-    const cleanText = String(text || "")
-      .replace(/undefined/gi, "")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    console.log("🔍 Typewriter - Texte nettoyé:", cleanText);
-
-    if (!cleanText) {
-      setDisplayedText("");
-      return;
-    }
-
-    // Réinitialiser avant de commencer
-    setDisplayedText("");
-
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < cleanText.length) {
-        setDisplayedText(cleanText.substring(0, i + 1));
-        i++;
-      } else {
-        clearInterval(interval);
-      }
-    }, speed);
-
-    return () => clearInterval(interval);
-  }, [text, speed]);
-
-  return <>{displayedText}</>;
-};
-
-// Composant principal Chatbot
 export const Chatbot: React.FC = () => {
-  // Charger les messages depuis localStorage ou utiliser le message par défaut
-  const [messages, setMessages] = useState(() => {
-    const savedMessages = localStorage.getItem('tsiky_chat_history');
-    if (savedMessages) {
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const saved = localStorage.getItem('tsiky_chat_history');
+    if (saved) {
       try {
-        const parsed = JSON.parse(savedMessages);
-        // Convertir les timestamps en objets Date et marquer comme anciens (pas de typewriter)
-        return parsed.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp),
-          isNew: false  // Messages chargés = pas d'animation
+        return JSON.parse(saved).map((m: any) => ({
+          ...m,
+          timestamp: new Date(m.timestamp)
         }));
-      } catch (error) {
-        console.error('Erreur lors du chargement de l\'historique:', error);
+      } catch (e) {
+        console.error("Failed to parse history", e);
       }
     }
-    // Message par défaut si pas d'historique
-    return [
-      {
-        id: 1,
-        sender: 'bot',
-        text: "Bonjour, je suis là pour t'écouter et t'aider. Comment te sens-tu aujourd'hui ?",
-        timestamp: new Date(),
-        isNew: false  // Message initial = pas d'animation
-      }
-    ];
+    return [{
+      id: 'init',
+      sender: 'bot',
+      text: "Bonjour, je suis là pour t'écouter. Comment te sens-tu aujourd'hui ?",
+      timestamp: new Date()
+    }];
   });
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [inputText, setInputText] = useState('');
-  const [isBotTyping, setIsBotTyping] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
-  const messagesEndRef = React.useRef<HTMLDivElement>(null);
-  const recognitionRef = React.useRef<any>(null);
 
+  const [input, setInput] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Initialize speech recognition
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'fr-FR';
-
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputText(transcript);
-        setIsRecording(false);
-      };
-
-      recognitionRef.current.onerror = () => {
-        setIsRecording(false);
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsRecording(false);
-      };
-    }
-  }, []);
-
-  // Scroll to bottom when new messages arrive
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isBotTyping]);
-
-  // Sauvegarder les messages dans localStorage à chaque changement
   useEffect(() => {
     localStorage.setItem('tsiky_chat_history', JSON.stringify(messages));
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!inputText.trim()) return;
+  const handleSend = async () => {
+    if (!input.trim() || isStreaming) return;
 
-    const userMessage = {
-      id: messages.length + 1,
-      sender: 'user' as const,
-      text: inputText,
-      timestamp: new Date(),
-      isNew: true  // Nouveau message utilisateur
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      sender: 'user',
+      text: input.trim(),
+      timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setInputText('');
-    setIsBotTyping(true);
-    setElapsedTime(0);
+    setMessages(prev => [...prev, userMsg]);
+    setInput('');
+    setIsStreaming(true);
 
-    // Timeout de 90 secondes pour éviter les coupures sur les serveurs lents (cold start)
-    const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), 90000);
+    // Create a placeholder bot message
+    const botMsgId = (Date.now() + 1).toString();
+    setMessages(prev => [...prev, {
+      id: botMsgId,
+      sender: 'bot',
+      text: '',
+      timestamp: new Date(),
+      isStreaming: true
+    }]);
 
-    // Compteur de temps
-    const startTime = Date.now();
-    const progressInterval = setInterval(() => {
-      setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
-    }, 1000);
+    abortControllerRef.current = new AbortController();
 
     try {
-      const responses = await sendMessageToDjango(userMessage.text, abortController.signal);
+      const response = await fetch(DJANGO_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMsg.text }),
+        signal: abortControllerRef.current.signal
+      });
 
-      responses
-        .filter(text => text !== undefined && text !== null)
-        .forEach(text => {
-          setMessages(prev => [
-            ...prev,
-            {
-              id: prev.length + 1,
-              sender: 'bot' as const,
-              text: String(text),
-              timestamp: new Date(),
-              isNew: true  // Nouveau message bot = animation typewriter
-            },
-          ]);
-        });
+      if (!response.body) throw new Error("No response body");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunkValue = decoder.decode(value, { stream: true });
+
+        setMessages(prev => prev.map(msg =>
+          msg.id === botMsgId
+            ? { ...msg, text: msg.text + chunkValue }
+            : msg
+        ));
+      }
+
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        setMessages(prev => prev.map(msg =>
+          msg.id === botMsgId
+            ? { ...msg, text: msg.text + "\n\n(Désolé, une erreur est survenue.)" }
+            : msg
+        ));
+      }
     } finally {
-      clearTimeout(timeoutId);
-      clearInterval(progressInterval);
-      setIsBotTyping(false);
-      setElapsedTime(0);
+      setIsStreaming(false);
+      setMessages(prev => prev.map(msg =>
+        msg.id === botMsgId ? { ...msg, isStreaming: false } : msg
+      ));
+      abortControllerRef.current = null;
     }
   };
 
-  // Fonction pour effacer l'historique
+  const stopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setIsStreaming(false);
+    }
+  };
+
   const clearHistory = () => {
-    const defaultMessage = {
-      id: 1,
-      sender: 'bot' as const,
-      text: "Bonjour, je suis là pour t'écouter et t'aider. Comment te sens-tu aujourd'hui ?",
-      timestamp: new Date(),
-      isNew: false
-    };
-    setMessages([defaultMessage]);
-    localStorage.removeItem('tsiky_chat_history');
-    setShowDeleteConfirm(false);
-  };
-
-  // Fonction pour gérer l'enregistrement vocal
-  const toggleVoiceRecording = () => {
-    if (!recognitionRef.current) {
-      alert('La reconnaissance vocale n\'est pas supportée sur votre navigateur.');
-      return;
-    }
-
-    if (isRecording) {
-      recognitionRef.current.stop();
-      setIsRecording(false);
-    } else {
-      recognitionRef.current.start();
-      setIsRecording(true);
-    }
+    setMessages([{
+      id: 'init',
+      sender: 'bot',
+      text: "Bonjour, je suis là pour t'écouter. Comment te sens-tu aujourd'hui ?",
+      timestamp: new Date()
+    }]);
   };
 
   return (
-    <section className="max-w-6xl mx-auto px-4 py-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass-light rounded-3xl shadow-2xl overflow-hidden border border-white/20 backdrop-blur-xl"
-      >
-        {/* Header */}
-        <div className="glass p-5 flex items-center border-b border-white/10">
-          <motion.div
-            className="w-3 h-3 bg-gradient-to-r from-lavender-400 to-lavender-600 rounded-full mr-3"
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          />
-          <h2 className="text-lavender-100 font-comic text-lg">Assistant Bienveillant</h2>
-          <div className="ml-auto flex items-center gap-2">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              type="button"
-              onClick={() => setShowDeleteConfirm(true)}
-              className="p-2 text-slate-300 hover:text-red-400 rounded-full hover:bg-red-500/10 transition-colors"
-              aria-label="Supprimer l'historique"
-            >
-              <Trash2Icon size={18} />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              type="button"
-              className="p-2 text-slate-300 hover:text-lavender-300 rounded-full hover:bg-lavender-500/10 transition-colors"
-              aria-label="Infos"
-            >
-              <InfoIcon size={18} />
-            </motion.button>
-          </div>
-        </div>
-
-        {/* Messages */}
-        <div className="h-[550px] overflow-y-auto p-6 bg-gradient-to-b from-slate-900/30 to-slate-900/50 backdrop-blur-sm">
-          {messages.map((message, index) => (
+    <div className="max-w-4xl mx-auto p-4 h-[80vh] flex flex-col">
+      <div className="flex-1 overflow-y-auto space-y-4 p-4 scrollbar-thin scrollbar-thumb-lavender-400/50">
+        <AnimatePresence>
+          {messages.map((msg) => (
             <motion.div
-              key={message.id}
-              initial={{ opacity: 0, x: message.sender === 'user' ? 20 : -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className={`mb-5 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              key={msg.id}
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                className={`max-w-md px-5 py-3 rounded-2xl shadow-lg ${message.sender === 'user'
-                  ? 'bg-gradient-to-br from-lavender-600 to-lavender-700 text-white rounded-br-sm'
-                  : 'bg-white/90 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 rounded-bl-sm border border-slate-200 dark:border-transparent'
+              <div
+                className={`max-w-[80%] p-4 rounded-2xl shadow-sm backdrop-blur-md ${msg.sender === 'user'
+                    ? 'bg-gradient-to-br from-lavender-600 to-indigo-600 text-white rounded-br-sm'
+                    : 'bg-white/80 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-white/20 rounded-bl-sm'
                   }`}
               >
-                <p className="text-sm leading-relaxed">
-                  {message.sender === "bot" && (message as any).isNew !== false
-                    ? <Typewriter text={message.text} speed={25} />
-                    : message.text}
-                </p>
-                <div className="text-right mt-2">
-                  <span className="text-xs opacity-60">
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
+                <div className="whitespace-pre-wrap leading-relaxed">{msg.text}</div>
+                {msg.isStreaming && (
+                  <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" />
+                )}
+                <div className={`text-[10px] mt-1 opacity-60 ${msg.sender === 'user' ? 'text-indigo-100' : 'text-slate-400'}`}>
+                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
-              </motion.div>
+              </div>
             </motion.div>
           ))}
+        </AnimatePresence>
+        <div ref={messagesEndRef} />
+      </div>
 
-          {isBotTyping && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-5 flex justify-start"
-            >
-              <div className="bg-white/90 dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 px-5 py-3 rounded-2xl rounded-bl-sm shadow-lg border border-slate-200 dark:border-transparent">
-                <p className="flex items-center gap-2">
-                  <motion.span
-                    animate={{ rotate: [0, 360] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  >
-                    🤔
-                  </motion.span>
-                  Le bot réfléchit...
-                  {elapsedTime > 0 && (
-                    <span className="text-xs opacity-70">({elapsedTime}s)</span>
-                  )}
-                </p>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Invisible element for auto-scroll */}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input */}
-        <div className="p-5 glass border-t border-white/10">
-          <div className="flex items-center gap-2">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              type="button"
-              className="p-2 text-slate-400 hover:text-lavender-300 rounded-full hover:bg-lavender-500/10 transition-colors"
-              aria-label="Emoji"
-            >
-              <SmileIcon size={20} />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              type="button"
-              className="p-2 text-slate-400 hover:text-lavender-300 rounded-full hover:bg-lavender-500/10 transition-colors"
-              aria-label="Image"
-            >
-              <ImageIcon size={20} />
-            </motion.button>
-            <input
-              type="text"
-              value={inputText}
-              onChange={e => setInputText(e.target.value)}
-              onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Écris ton message ici..."
-              className="flex-1 glass-light border border-white/20 rounded-xl px-5 py-3 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lavender-400 focus:border-transparent transition-all"
-            />
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              type="button"
-              onClick={toggleVoiceRecording}
-              className={`p-2 rounded-full transition-colors ${isRecording ? 'text-red-500 bg-red-100 animate-pulse' : 'text-slate-400 hover:text-lavender-300 hover:bg-lavender-500/10'}`}
-              aria-label="Vocal"
-            >
-              <MicIcon size={20} />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              type="button"
-              onClick={handleSendMessage}
-              className="p-3 bg-gradient-to-r from-lavender-500 to-lavender-600 hover:from-lavender-400 hover:to-lavender-500 text-white rounded-xl shadow-lg animate-pulseGlow transition-all"
-              aria-label="Envoyer"
-            >
-              <SendIcon size={20} />
-            </motion.button>
-          </div>
-          <div className="mt-3 text-xs text-center text-slate-400">
-            💜 Cet assistant est là pour t'écouter, mais ne remplace pas un professionnel de santé.
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          onClick={() => setShowDeleteConfirm(false)}
+      <div className="mt-4 glass p-2 rounded-2xl flex items-center gap-2 border border-white/20 shadow-lg">
+        <button
+          onClick={clearHistory}
+          className="p-3 text-slate-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
+          title="Effacer l'historique"
         >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            onClick={e => e.stopPropagation()}
-            className="glass-light rounded-2xl p-6 max-w-md w-full shadow-2xl border border-white/20"
+          <Trash2Icon size={20} />
+        </button>
+
+        <input
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSend()}
+          placeholder="Écris quelque chose..."
+          className="flex-1 bg-transparent border-none outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400 px-2"
+          disabled={isStreaming}
+        />
+
+        {isStreaming ? (
+          <button
+            onClick={stopGeneration}
+            className="p-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
           >
-            <div className="text-center">
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 0.5 }}
-                className="inline-block mb-4"
-              >
-                <Trash2Icon size={48} className="text-red-400" />
-              </motion.div>
-              <h3 className="text-xl font-comic text-white mb-2">Supprimer l'historique ?</h3>
-              <p className="text-slate-300 mb-6">
-                Es-tu sûr(e) de vouloir effacer toute la conversation ? Cette action est irréversible.
-              </p>
-              <div className="flex gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 px-4 py-2 glass border border-white/20 text-white rounded-xl hover:bg-white/10 transition-colors"
-                >
-                  Annuler
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={clearHistory}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-400 hover:to-red-500 shadow-lg transition-all"
-                >
-                  Supprimer
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </section>
+            <StopCircle size={24} />
+          </button>
+        ) : (
+          <button
+            onClick={handleSend}
+            disabled={!input.trim()}
+            className="p-3 bg-lavender-600 hover:bg-lavender-700 text-white rounded-xl shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <SendIcon size={20} />
+          </button>
+        )}
+      </div>
+    </div>
   );
 };
