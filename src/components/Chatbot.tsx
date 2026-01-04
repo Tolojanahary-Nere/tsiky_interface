@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SendIcon, SmileIcon, ImageIcon, MicIcon, Trash2Icon, StopCircle } from 'lucide-react';
+import { SendIcon, MicIcon, StopCircle, Trash2Icon } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-const DJANGO_API_URL = 'https://tsiky-backend.onrender.com/chat/';
+const DJANGO_API_URL = 'http://127.0.0.1:8000/chat/';
 
 interface Message {
-  id: string; // Changed to string for UUIDs if needed, or keeping number is fine but string is more robust
+  id: string;
   sender: 'user' | 'bot';
   text: string;
   timestamp: Date;
@@ -25,22 +27,19 @@ export const Chatbot: React.FC = () => {
         console.error("Failed to parse history", e);
       }
     }
-    return [{
-      id: 'init',
-      sender: 'bot',
-      text: "Bonjour, je suis là pour t'écouter. Comment te sens-tu aujourd'hui ?",
-      timestamp: new Date()
-    }];
+    return [];
   });
 
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
     localStorage.setItem('tsiky_chat_history', JSON.stringify(messages));
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleSend = async () => {
@@ -57,7 +56,6 @@ export const Chatbot: React.FC = () => {
     setInput('');
     setIsStreaming(true);
 
-    // Create a placeholder bot message
     const botMsgId = (Date.now() + 1).toString();
     setMessages(prev => [...prev, {
       id: botMsgId,
@@ -90,7 +88,7 @@ export const Chatbot: React.FC = () => {
 
         setMessages(prev => prev.map(msg =>
           msg.id === botMsgId
-            ? { ...msg, text: msg.text + chunkValue }
+            ? { ...msg, text: (msg.text + chunkValue).replace(/^{"reply":\s*"(.*)"}$/, '$1') }
             : msg
         ));
       }
@@ -98,9 +96,7 @@ export const Chatbot: React.FC = () => {
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         setMessages(prev => prev.map(msg =>
-          msg.id === botMsgId
-            ? { ...msg, text: msg.text + "\n\n(Désolé, une erreur est survenue.)" }
-            : msg
+          msg.id === botMsgId ? { ...msg, text: msg.text + "\n(Oups, petit souci de connexion...)" } : msg
         ));
       }
     } finally {
@@ -120,81 +116,157 @@ export const Chatbot: React.FC = () => {
   };
 
   const clearHistory = () => {
-    setMessages([{
-      id: 'init',
-      sender: 'bot',
-      text: "Bonjour, je suis là pour t'écouter. Comment te sens-tu aujourd'hui ?",
-      timestamp: new Date()
-    }]);
+    setMessages([]);
   };
 
+  const isEmpty = messages.length === 0;
+
   return (
-    <div className="max-w-4xl mx-auto p-4 h-[80vh] flex flex-col">
-      <div className="flex-1 overflow-y-auto space-y-4 p-4 scrollbar-thin scrollbar-thumb-lavender-400/50">
-        <AnimatePresence>
-          {messages.map((msg) => (
+    // FIX: Removed 'overflow-hidden' from main container to prevent clipping
+    <div className="flex flex-col h-[85vh] w-full max-w-5xl mx-auto bg-slate-900/50 backdrop-blur-3xl rounded-3xl border border-white/10 shadow-2xl relative my-4">
+
+      {/* Messages Scroll Area */}
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto px-4 md:px-20 py-8 scrollbar-thin scrollbar-thumb-white/10 scroll-smooth"
+      >
+        {isEmpty ? (
+          <div className="h-full flex flex-col items-center justify-center text-center opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
             <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="relative w-32 h-32 mb-6"
             >
+              <div className="absolute inset-0 bg-blue-500 rounded-full blur-3xl opacity-20 animate-pulse"></div>
+              <img src="/bot-avatar.png" alt="Tsiky" className="w-full h-full object-contain drop-shadow-2xl" />
+            </motion.div>
+            <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-purple-200 mb-2">
+              Bonjour, je suis Tsiky
+            </h2>
+            <p className="text-slate-400 max-w-md">
+              Je suis là pour vous écouter et échanger avec bienveillance.
+            </p>
+
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-lg">
+              {['Je me sens un peu anxieux', 'Raconte-moi une histoire', 'Conseils pour mieux dormir', 'Juste envie de parler'].map(suggestion => (
+                <button
+                  key={suggestion}
+                  onClick={() => { setInput(suggestion); }}
+                  className="p-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-sm text-slate-300 transition-all text-left"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-8 pb-4">
+            {messages.map((msg) => (
               <div
-                className={`max-w-[80%] p-4 rounded-2xl shadow-sm backdrop-blur-md ${msg.sender === 'user'
-                    ? 'bg-gradient-to-br from-lavender-600 to-indigo-600 text-white rounded-br-sm'
-                    : 'bg-white/80 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-white/20 rounded-bl-sm'
-                  }`}
+                key={msg.id}
+                className={`flex gap-4 ${msg.sender === 'user' ? 'justify-end' : 'justify-start group'}`}
               >
-                <div className="whitespace-pre-wrap leading-relaxed">{msg.text}</div>
-                {msg.isStreaming && (
-                  <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" />
+                {/* Bot Avatar */}
+                {msg.sender === 'bot' && (
+                  <div className="flex-none w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 p-0.5 mt-1 shadow-lg overflow-hidden">
+                    <img src="/bot-avatar.png" alt="Bot" className="w-full h-full object-cover bg-slate-900" />
+                  </div>
                 )}
-                <div className={`text-[10px] mt-1 opacity-60 ${msg.sender === 'user' ? 'text-indigo-100' : 'text-slate-400'}`}>
-                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+
+                {/* Message Bubble */}
+                {/* FIX: Removed 'overflow-hidden' here and increased width to 95% */}
+                <div
+                  className={`max-w-[95%] md:max-w-[85%] px-5 py-3 rounded-2xl text-[15px] leading-relaxed shadow-sm
+                    ${msg.sender === 'user'
+                      ? 'bg-blue-600 text-white rounded-tr-md'
+                      : 'text-slate-200 w-full'
+                    }`}
+                >
+                  {msg.sender === 'bot' ? (
+                    <div className="prose prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-slate-800 prose-pre:p-2 prose-pre:rounded-lg w-full">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          p: ({ node, ...props }) => <p className="mb-2 last:mb-0 break-words w-full" {...props} />,
+                          a: ({ node, ...props }) => <a className="text-blue-400 hover:underline break-all" {...props} />,
+                          code: ({ node, ...props }) => <code className="bg-slate-800 px-1 rounded text-sm break-all whitespace-pre-wrap" {...props} />,
+                          pre: ({ node, ...props }) => <pre className="overflow-x-auto w-full my-2" {...props} />
+                        }}
+                      >
+                        {msg.text}
+                      </ReactMarkdown>
+                      {msg.isStreaming && <span className="inline-block w-2 h-4 ml-1 bg-blue-400 animate-pulse rounded-full align-middle" />}
+                    </div>
+                  ) : (
+                    <div className="break-words overflow-anywhere">{msg.text}</div>
+                  )}
                 </div>
               </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        <div ref={messagesEndRef} />
-      </div>
-
-      <div className="mt-4 glass p-2 rounded-2xl flex items-center gap-2 border border-white/20 shadow-lg">
-        <button
-          onClick={clearHistory}
-          className="p-3 text-slate-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
-          title="Effacer l'historique"
-        >
-          <Trash2Icon size={20} />
-        </button>
-
-        <input
-          type="text"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleSend()}
-          placeholder="Écris quelque chose..."
-          className="flex-1 bg-transparent border-none outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400 px-2"
-          disabled={isStreaming}
-        />
-
-        {isStreaming ? (
-          <button
-            onClick={stopGeneration}
-            className="p-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
-          >
-            <StopCircle size={24} />
-          </button>
-        ) : (
-          <button
-            onClick={handleSend}
-            disabled={!input.trim()}
-            className="p-3 bg-lavender-600 hover:bg-lavender-700 text-white rounded-xl shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <SendIcon size={20} />
-          </button>
+            ))}
+            <div className="h-4" />
+          </div>
         )}
       </div>
+
+      {/* Fixed Bottom Input */}
+      <div className="flex-none p-4 md:p-6 bg-slate-900/80 backdrop-blur-xl border-t border-white/5 z-20 rounded-b-3xl">
+        <div className="max-w-3xl mx-auto relative">
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-2 pl-4 flex items-end shadow-xl transition-all focus-within:ring-1 focus-within:ring-white/20 focus-within:bg-white/10">
+
+            <textarea
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="Écrivez à Tsiky..."
+              disabled={isStreaming}
+              className="flex-1 bg-transparent border-none outline-none text-white placeholder-slate-500 text-base py-3 min-h-[44px] max-h-32 resize-none scrollbar-none"
+              rows={1}
+            />
+
+            <div className="flex items-center gap-2 pb-2 pr-2">
+              {!isEmpty && (
+                <button
+                  onClick={clearHistory}
+                  className="p-2 text-slate-500 hover:text-red-400 transition-colors"
+                  title="Nouvelle conversation"
+                >
+                  <Trash2Icon size={20} />
+                </button>
+              )}
+
+              {isStreaming ? (
+                <button
+                  onClick={stopGeneration}
+                  className="p-2 bg-white text-slate-900 rounded-full hover:bg-slate-200 transition-colors"
+                >
+                  <StopCircle size={20} />
+                </button>
+              ) : (
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim()}
+                  className={`p-2 rounded-full transition-all ${input.trim()
+                    ? 'bg-white text-slate-900 hover:bg-blue-50'
+                    : 'bg-white/10 text-slate-500 cursor-not-allowed'
+                    }`}
+                >
+                  <SendIcon size={20} />
+                </button>
+              )}
+            </div>
+          </div>
+          <p className="text-center text-slate-600 text-xs mt-3">
+            L'IA peut faire des erreurs. Vérifiez les informations importantes.
+          </p>
+        </div>
+      </div>
+
     </div>
   );
 };
