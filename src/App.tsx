@@ -15,18 +15,11 @@ export const ThemeContext = createContext({
   toggleDarkMode: () => { }
 });
 export function App() {
-  // Charger la section sauvegardée ou 'home' par défaut
-  const [currentSection, setCurrentSection] = useState(() => {
-    return localStorage.getItem('tsiky_current_section') || 'home';
-  });
+  // Section par défaut : 'home'
+  const [currentSection, setCurrentSection] = useState('home');
   const [showEmergencyMode, setShowEmergencyMode] = useState(false);
   const [showWelcomeGlow, setShowWelcomeGlow] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false); // Light mode by default
-
-  // Sauvegarder la section actuelle
-  useEffect(() => {
-    localStorage.setItem('tsiky_current_section', currentSection);
-  }, [currentSection]);
 
   // Vérifier si le mode sombre est préféré ou sauvegardé
   useEffect(() => {
