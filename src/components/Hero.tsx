@@ -4,34 +4,26 @@ import { ArrowRightIcon } from 'lucide-react';
 import { BearMascot } from './animations/BearMascot';
 import { FlowerBloom } from './animations/FlowerBloom';
 import { MiniSun } from './animations/MiniSun';
+import { useTranslation } from 'react-i18next';
 
 interface HeroProps {
   setCurrentSection?: (section: string) => void;
 }
 
 export const Hero: React.FC<HeroProps> = ({ setCurrentSection }) => {
+  const { t } = useTranslation();
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [showStars, setShowStars] = useState(false);
-  const inspirationalMessages = [
-    "Un jour à la fois, tu t'en sortiras.",
-    'Ta valeur ne dépend pas de ta productivité.',
-    "Respire. Tu fais de ton mieux et c'est suffisant.",
-    'Cette émotion est temporaire, pas ta force.',
-    "Tu n'es pas seul(e) dans cette traversée.",
-    'Chaque petit pas compte, même les plus petits.',
-    "Ta présence dans ce monde a de l'importance.",
-    'Sois doux(ce) avec toi-même aujourd\'hui.',
-    'Tes sentiments sont valides et légitimes.',
-    'Tu mérites amour et compassion, surtout de toi-même.',
-    'Cette tempête passera, tu es plus fort(e) que tu ne le crois.',
-    'Prends le temps de guérir, il n\'y a pas de rush.',
-  ];
+
+  const inspirationalMessages = t('hero.messages', { returnObjects: true }) as string[];
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentMessageIndex(prevIndex => prevIndex === inspirationalMessages.length - 1 ? 0 : prevIndex + 1);
     }, 3000); // Changed from 8000 to 3000ms for faster rotation
     return () => clearInterval(interval);
-  }, []);
+  }, [inspirationalMessages.length]); // Added dependency
+
   const handleButtonClick = () => {
     setShowStars(true);
     setTimeout(() => setShowStars(false), 2000);
@@ -52,7 +44,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentSection }) => {
         duration: 0.7
       }}>
         <h1 className="font-comic text-3xl md:text-4xl lg:text-5xl mb-6 text-comfort-600">
-          Prends ton temps, respire
+          {t('hero.title')}
         </h1>
       </motion.div>
       <div className="mb-8">
@@ -82,9 +74,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentSection }) => {
         delay: 0.3
       }} className="mt-8">
         <p className="text-text mb-8 max-w-2xl mx-auto">
-          Un espace bienveillant pour t'accompagner dans tes moments
-          difficiles. Discute avec notre assistant, explore des ressources
-          thérapeutiques, ou rejoins notre communauté de soutien.
+          {t('hero.subtitle')}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8 relative">
           <motion.button
@@ -94,7 +84,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentSection }) => {
               setCurrentSection?.('resources');
             }}
           >
-            <span>Explorer</span>
+            <span>{t('hero.explore')}</span>
             <ArrowRightIcon size={18} className="ml-2" />
             {/* Étoiles qui apparaissent au clic */}
             {showStars && <>
@@ -120,7 +110,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentSection }) => {
             className="btn-outline"
             onClick={() => setCurrentSection?.('chatbot')}
           >
-            Discuter
+            {t('hero.chat')}
           </motion.button>
         </div>
       </motion.div>
@@ -134,7 +124,7 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentSection }) => {
         delay: 0.6
       }}>
         <h2 className="text-xl font-comic text-comfort-600 mb-6">
-          Témoignages
+          {t('hero.testimonialsTitle')}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="clay-card">
@@ -142,12 +132,10 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentSection }) => {
               <FlowerBloom size={50} />
             </div>
             <p className="text-text italic">
-              "Cette plateforme m'a aidé à traverser ma dépression
-              post-études. Les exercices de respiration et le suivi quotidien
-              ont vraiment fait la différence."
+              "{t('hero.testimonial1')}"
             </p>
             <p className="text-right text-sm text-comfort-500 mt-4">
-              — Anonyme, 24 ans
+              — {t('hero.anonymous_24')}
             </p>
           </div>
           <div className="clay-card">
@@ -155,12 +143,10 @@ export const Hero: React.FC<HeroProps> = ({ setCurrentSection }) => {
               <FlowerBloom size={50} />
             </div>
             <p className="text-text italic">
-              "J'ai trouvé ici un espace où je peux exprimer mes angoisses
-              sans jugement. Le chatbot est étonnamment réconfortant dans les
-              moments de crise."
+              "{t('hero.testimonial2')}"
             </p>
             <p className="text-right text-sm text-comfort-500 mt-4">
-              — Anonyme, 22 ans
+              — {t('hero.anonymous_22')}
             </p>
           </div>
         </div>

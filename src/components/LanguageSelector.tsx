@@ -16,7 +16,7 @@ const languages: Language[] = [
 ];
 
 export const LanguageSelector: React.FC = () => {
-    const { i18n } = useTranslation();
+    const { i18n, t } = useTranslation();
     const [isOpen, setIsOpen] = React.useState(false);
 
     const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
@@ -31,7 +31,7 @@ export const LanguageSelector: React.FC = () => {
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors"
-                aria-label="Change language"
+                aria-label={t('nav.changeLanguage')}
             >
                 <Globe size={18} className="text-lavender-300" />
                 <span className="text-2xl">{currentLanguage.flag}</span>

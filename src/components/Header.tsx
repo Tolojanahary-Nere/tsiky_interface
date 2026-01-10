@@ -89,7 +89,7 @@ export const Header: React.FC<HeaderProps> = ({
             scale: 1.1
           }} whileTap={{
             scale: 0.95
-          }} onClick={toggleDarkMode} className={`p-2 rounded-full ${isDarkMode ? 'bg-dark-calm-200/50' : 'bg-calm-50/50'} theme-transition`} aria-label={isDarkMode ? 'Activer le mode clair' : 'Activer le mode sombre'}>
+          }} onClick={toggleDarkMode} className={`p-2 rounded-full ${isDarkMode ? 'bg-dark-calm-200/50' : 'bg-calm-50/50'} theme-transition`} aria-label={isDarkMode ? t('nav.toggleLight') : t('nav.toggleDark')}>
             {isDarkMode ? <SunIcon size={20} className="text-dark-comfort-400" /> : <MoonIcon size={20} className="text-comfort-500" />}
           </motion.button>
           <LanguageSelector />
@@ -97,9 +97,9 @@ export const Header: React.FC<HeaderProps> = ({
             scale: 1.1
           }} whileTap={{
             scale: 0.95
-          }} onClick={onEmergencyClick} className={`hidden sm:flex items-center space-x-2 ${isDarkMode ? 'bg-dark-gentle text-dark-comfort-100' : 'bg-gentle text-white'} px-4 py-2 rounded-full shadow-md theme-transition`} aria-label="Mode urgence">
+          }} onClick={onEmergencyClick} className={`hidden sm:flex items-center space-x-2 ${isDarkMode ? 'bg-dark-gentle text-dark-comfort-100' : 'bg-gentle text-white'} px-4 py-2 rounded-full shadow-md theme-transition`} aria-label={t('nav.emergencyMode')}>
             <HeartPulseIcon size={18} />
-            <span>Urgence</span>
+            <span>{t('nav.emergency')}</span>
           </motion.button>
           {/* Mobile menu button */}
           <div className="md:hidden">
@@ -133,10 +133,10 @@ export const Header: React.FC<HeaderProps> = ({
           <button onClick={toggleDarkMode} className={`flex items-center space-x-2 px-4 py-2 rounded-full ${isDarkMode ? 'bg-dark-calm-200/50 text-dark-comfort-400' : 'bg-calm-50/50 text-comfort-500'} theme-transition`}>
             {isDarkMode ? <>
               <SunIcon size={18} />
-              <span>Mode clair</span>
+              <span>{t('nav.lightMode')}</span>
             </> : <>
               <MoonIcon size={18} />
-              <span>Mode sombre</span>
+              <span>{t('nav.darkMode')}</span>
             </>}
           </button>
         </div>
@@ -145,7 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
           setIsMenuOpen(false);
         }} className={`flex items-center w-full space-x-2 ${isDarkMode ? 'bg-dark-gentle hover:bg-dark-gentle/90 text-dark-comfort-100' : 'bg-gentle hover:bg-gentle/90 text-white'} px-4 py-3 rounded-3xl theme-transition`}>
           <HeartPulseIcon size={18} />
-          <span>Mode Urgence</span>
+          <span>{t('nav.emergencyMode')}</span>
         </button>
       </div>
     </motion.div>}
