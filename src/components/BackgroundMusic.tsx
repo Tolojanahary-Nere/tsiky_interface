@@ -41,13 +41,31 @@ export const BackgroundMusic: React.FC<BackgroundMusicProps> = ({
     useEffect(() => {
         if (audioRef.current) {
             if (isPlaying) {
-                const playPromise = audioRef.current.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(error => {
-                        console.log("Autoplay prevented by browser policy:", error);
-                        // Optional: You could update specific state here to show UI indicating interaction is needed
-                    });
-                }
+                const playAudio = () => {
+                    const playPromise = audioRef.current?.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            console.log("Autoplay prevented. Waiting for user interaction...");
+                            // Add one-time listeners for user interaction
+                            const enableAudio = () => {
+                                if (audioRef.current && isPlaying) {
+                                    audioRef.current.play().then(() => {
+                                        console.log("Audio started after interaction");
+                                    }).catch(e => console.error("Still unable to play:", e));
+                                }
+                                // Remove listeners after first interaction
+                                document.removeEventListener('click', enableAudio);
+                                document.removeEventListener('keydown', enableAudio);
+                                document.removeEventListener('touchstart', enableAudio);
+                            };
+
+                            document.addEventListener('click', enableAudio);
+                            document.addEventListener('keydown', enableAudio);
+                            document.addEventListener('touchstart', enableAudio);
+                        });
+                    }
+                };
+                playAudio();
             } else {
                 audioRef.current.pause();
             }
