@@ -1,0 +1,112 @@
+{
+    "name": "Chatbot Tsiky - Free AI (Hugging Face)",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "chat",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                460,
+                240
+            ],
+            "webhookId": "tsiky-chat-webhook-hf"
+        },
+        {
+            "parameters": {
+                "text": "={{ $json.message }}",
+                "options": {}
+            },
+            "id": "ai-agent",
+            "name": "AI Agent",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 1.0,
+            "position": [
+                680,
+                240
+            ],
+            "inputs": [
+                "webhook-trigger"
+            ],
+            "outputs": [
+                "main"
+            ]
+        },
+        {
+            "parameters": {
+                "model": "mistralai/Mistral-7B-Instruct-v0.2",
+                "options": {
+                    "temperature": 0.7
+                }
+            },
+            "id": "hugging-face-model",
+            "name": "Hugging Face Model",
+            "type": "@n8n/n8n-nodes-langchain.lmChatHuggingFace",
+            "typeVersion": 1,
+            "position": [
+                640,
+                460
+            ],
+            "credentials": {
+                "huggingFaceApi": {
+                    "id": "YOUR_HF_CREDENTIAL_ID",
+                    "name": "Hugging Face account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "contextWindowLength": 5
+            },
+            "id": "memory-window",
+            "name": "Window Buffer Memory",
+            "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+            "typeVersion": 1,
+            "position": [
+                800,
+                460
+            ]
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Hugging Face Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Window Buffer Memory": {
+            "ai_memory": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_memory",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

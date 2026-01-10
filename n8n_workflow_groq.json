@@ -1,0 +1,166 @@
+{
+    "name": "Chatbot Tsiky - Free AI (Groq + Tools)",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "chat",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                460,
+                240
+            ],
+            "webhookId": "tsiky-chat-webhook"
+        },
+        {
+            "parameters": {
+                "text": "={{ \"[INSTRUCTION: Answer in language '\" + ($json.language || 'fr') + \"']\\n\\n\" + $json.message }}",
+                "options": {
+                    "systemMessage": "Tu es Tsiky, un compagnon virtuel de santé mentale pour l'application 'Tsiky'.\n\n**INSTRUCTION CRITIQUE :**\nTu reçois une instruction de langue au début de chaque message (ex: [INSTRUCTION: Answer in language 'en']). TU DOIS ABSOLUMENT RÉPONDRE DANS CETTE LANGUE.\n\n**Mission :**\nAider activement l'utilisateur à combattre la dépression et l'anxiété.\n\n**Outils :**\nUtilise Wikipedia pour expliquer les concepts psychologiques si besoin.\n\n**Contexte :**\n- Urgence -> 3114 (FR).\n- Ressources -> Onglet Ressources.\n\n**Style :**\nEmpathique, court, concret."
+                }
+            },
+            "id": "ai-agent",
+            "name": "AI Agent",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 1.0,
+            "position": [
+                680,
+                240
+            ],
+            "inputs": [
+                "webhook-trigger"
+            ],
+            "outputs": [
+                "main"
+            ]
+        },
+        {
+            "parameters": {
+                "model": "llama3-8b-8192",
+                "options": {
+                    "temperature": 0.5
+                }
+            },
+            "id": "groq-chat-model",
+            "name": "Groq Chat Model",
+            "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+            "typeVersion": 1,
+            "position": [
+                660,
+                480
+            ],
+            "credentials": {
+                "groqApi": {
+                    "id": "YOUR_GROQ_CREDENTIAL_ID",
+                    "name": "Groq account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "contextWindowLength": 10
+            },
+            "id": "memory-window",
+            "name": "Window Buffer Memory",
+            "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+            "typeVersion": 1,
+            "position": [
+                820,
+                480
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "text",
+                "responseBody": "={{ $json.output }}",
+                "options": {}
+            },
+            "id": "respond-to-webhook",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1000,
+                240
+            ],
+            "inputs": [
+                "ai-agent"
+            ]
+        },
+        {
+            "parameters": {},
+            "id": "wikipedia-tool",
+            "name": "Wikipedia",
+            "type": "@n8n/n8n-nodes-langchain.toolWikipedia",
+            "typeVersion": 1,
+            "position": [
+                540,
+                480
+            ]
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Agent": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Groq Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Window Buffer Memory": {
+            "ai_memory": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_memory",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Wikipedia": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

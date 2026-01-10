@@ -19,7 +19,14 @@ const resources = {
                 welcome: "Bonjour, je suis là pour t'écouter et t'aider. Comment te sens-tu aujourd'hui ?",
                 send: "Envoyer",
                 clear: "Effacer l'historique",
-                clearConfirm: "Êtes-vous sûr de vouloir effacer tout l'historique de conversation ?"
+                clear: "Effacer l'historique",
+                clearConfirm: "Êtes-vous sûr de vouloir effacer tout l'historique de conversation ?",
+                suggestions: {
+                    panic: "Je fais une crise d'angoisse",
+                    help: "Où trouver de l'aide ?",
+                    lonely: "Je me sens seul(e)",
+                    mood: "Comment suivre mon humeur ?"
+                }
             },
             dashboard: {
                 title: "Mon bien-être",
@@ -107,7 +114,14 @@ const resources = {
                 welcome: "Hello, I'm here to listen and help. How are you feeling today?",
                 send: "Send",
                 clear: "Clear history",
-                clearConfirm: "Are you sure you want to clear all conversation history?"
+                clear: "Clear history",
+                clearConfirm: "Are you sure you want to clear all conversation history?",
+                suggestions: {
+                    panic: "I'm having a panic attack",
+                    help: "Where can I find help?",
+                    lonely: "I feel lonely",
+                    mood: "How to track my mood?"
+                }
             },
             dashboard: {
                 title: "My Wellness",
@@ -195,7 +209,14 @@ const resources = {
                 welcome: "Hola, estoy aquí para escuchar y ayudar. ¿Cómo te sientes hoy?",
                 send: "Enviar",
                 clear: "Borrar historial",
-                clearConfirm: "¿Estás seguro de que quieres borrar todo el historial de conversación?"
+                clear: "Borrar historial",
+                clearConfirm: "¿Estás seguro de que quieres borrar todo el historial de conversación?",
+                suggestions: {
+                    panic: "Tengo un ataque de pánico",
+                    help: "¿Dónde puedo encontrar ayuda?",
+                    lonely: "Me siento solo/a",
+                    mood: "¿Cómo seguir mi estado de ánimo?"
+                }
             },
             dashboard: {
                 title: "Mi Bienestar",
