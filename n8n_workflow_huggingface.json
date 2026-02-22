@@ -41,23 +41,23 @@
         },
         {
             "parameters": {
-                "model": "mistralai/Mistral-7B-Instruct-v0.2",
+                "model": "gpt-3.5-turbo",
                 "options": {
                     "temperature": 0.7
                 }
             },
-            "id": "hugging-face-model",
-            "name": "Hugging Face Model",
-            "type": "@n8n/n8n-nodes-langchain.lmChatHuggingFace",
+            "id": "openai-chat-model",
+            "name": "OpenAI Chat Model",
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
             "typeVersion": 1,
             "position": [
                 640,
                 460
             ],
             "credentials": {
-                "huggingFaceApi": {
-                    "id": "YOUR_HF_CREDENTIAL_ID",
-                    "name": "Hugging Face account"
+                "openAiApi": {
+                    "id": "",
+                    "name": "OpenAI account"
                 }
             }
         },
@@ -88,7 +88,7 @@
                 ]
             ]
         },
-        "Hugging Face Model": {
+        "OpenAI Chat Model": {
             "ai_languageModel": [
                 [
                     {
