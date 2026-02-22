@@ -42,23 +42,20 @@
         },
         {
             "parameters": {
-                "model": "llama3-8b-8192",
-                "options": {
-                    "temperature": 0.5
-                }
+                "model": "models/gemini-1.5-flash"
             },
-            "id": "groq-chat-model",
-            "name": "Groq Chat Model",
-            "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+            "id": "gemini-chat-model",
+            "name": "Google Gemini Chat Model",
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
             "typeVersion": 1,
             "position": [
                 660,
                 480
             ],
             "credentials": {
-                "groqApi": {
-                    "id": "YOUR_GROQ_CREDENTIAL_ID",
-                    "name": "Groq account"
+                "googleApi": {
+                    "id": "",
+                    "name": "Google API"
                 }
             }
         },
@@ -129,7 +126,7 @@
                 ]
             ]
         },
-        "Groq Chat Model": {
+        "Google Gemini Chat Model": {
             "ai_languageModel": [
                 [
                     {
