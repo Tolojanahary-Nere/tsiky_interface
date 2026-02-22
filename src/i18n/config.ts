@@ -76,6 +76,7 @@ const resources = {
                 send: "Envoyer",
                 clear: "Effacer l'historique",
                 clearConfirm: "Êtes-vous sûr de vouloir effacer tout l'historique de conversation ?",
+                emptyResponse: "Je suis désolé, je n'ai pas pu générer une réponse claire. Pourriez-vous reformuler ?",
                 suggestions: {
                     panic: "Je fais une crise d'angoisse",
                     help: "Où trouver de l'aide ?",
@@ -226,6 +227,7 @@ const resources = {
                 send: "Send",
                 clear: "Clear history",
                 clearConfirm: "Are you sure you want to clear all conversation history?",
+                emptyResponse: "I'm sorry, I couldn't generate a clear response. Could you rephrase?",
                 suggestions: {
                     panic: "I'm having a panic attack",
                     help: "Where can I find help?",
@@ -376,6 +378,7 @@ const resources = {
                 send: "Enviar",
                 clear: "Borrar historial",
                 clearConfirm: "¿Estás seguro de que quieres borrar todo el historial de conversación?",
+                emptyResponse: "Lo siento, no pude generar una respuesta clara. ¿Podrías reformularlo?",
                 suggestions: {
                     panic: "Tengo un ataque de pánico",
                     help: "¿Dónde puedo encontrar ayuda?",
